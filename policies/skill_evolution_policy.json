@@ -1,0 +1,39 @@
+{
+  "version": "1.0",
+  "description": "CRTX Skill Evolution Policy — controls when and how new Skills are created. Provider-neutral.",
+  "pipeline": "Error → Evidence → Proposal → Skill → Decision → Capsule",
+  "rules": {
+    "1_evidence_first": "Every error MUST be recorded as Evidence (E-*.json) before any Skill is considered.",
+    "2_threshold": "A Skill Proposal requires 3+ Evidence items sharing the same pattern.",
+    "3_proposal_required": "Skills may ONLY be created from APPROVED Skill Proposals (SP-*.json).",
+    "4_quality": "Skills must be short, reusable rules — not bug-specific fixes.",
+    "5_dedup": "Before creating a new Skill, search existing Skills, Decision Registry, and Evidence Registry. Update existing if similar rule exists.",
+    "6_compression": "Prefer compression over growth. Merge related skills — do not accumulate.",
+    "7_reject_low_value": "If a new Skill increases context size without reusable value, reject it."
+  },
+  "evidenceSchema": {
+    "id": "E-{TASK_ID}-{SEQ}",
+    "pattern": "Short pattern name",
+    "what_failed": "Human-readable description",
+    "root_cause": "Technical root cause",
+    "files_involved": ["file:lineNumber"],
+    "fix_applied": "Description of the fix",
+    "validation": "How it was confirmed fixed",
+    "timestamp": "ISO-8601"
+  },
+  "proposalSchema": {
+    "id": "SP-{SEQ}",
+    "status": "PENDING | APPROVED | REJECTED",
+    "pattern": "Pattern name",
+    "evidence_refs": ["E-{id1}", "E-{id2}", "E-{id3}"],
+    "suggested_rule": "Short, reusable, actionable rule sentence.",
+    "expected_benefit": "What this prevents in future tasks",
+    "token_impact": "POSITIVE | NEUTRAL | NEGATIVE"
+  },
+  "paths": {
+    "evidence": "crtx/evidence/E-*.json",
+    "proposals": "crtx/decisions/SP-*.json",
+    "skills": "crtx/policies/skills/*.md",
+    "capsules": "crtx/capsules/*.json"
+  }
+}

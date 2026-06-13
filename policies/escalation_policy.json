@@ -1,0 +1,11 @@
+{
+  "skill": "Escalation Policy",
+  "must_escalate": [
+    "tenant_isolation",
+    "rbac",
+    "auth",
+    "database_schema",
+    "deletion_policy"
+  ],
+  "instruction": "For any tasks touching these areas (e.g., F24, F25), the agent does not have the right to make decisions autonomously. You must escalate and seek explicit approval."
+}

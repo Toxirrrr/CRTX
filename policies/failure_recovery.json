@@ -1,0 +1,16 @@
+{
+  "skill": "Agent Failure Policy",
+  "policy": {
+    "agent_unavailable": "retry",
+    "retry_failed": "reassign",
+    "reassign_failed": "park",
+    "park_expired": "escalate"
+  },
+  "handling": {
+    "quota_exhausted": "escalate immediately to human orchestrator",
+    "model_unavailable": "park task, retry after 5 minutes",
+    "mcp_unavailable": "park task, retry after 1 minute",
+    "merge_conflict": "reassign to main agent (Claude) for manual resolution",
+    "lock_timeout": "retry with backoff"
+  }
+}

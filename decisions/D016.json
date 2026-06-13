@@ -1,0 +1,9 @@
+{
+  "id": "D016",
+  "title": "Repository Pattern",
+  "status": "accepted",
+  "date": "2026-06-12",
+  "scope": "backend",
+  "rule": "Prisma client must be accessed ONLY in *.repository.ts extending BaseRepository. Services must not access Prisma directly.",
+  "exceptions": []
+}

@@ -1,0 +1,11 @@
+{
+  "id": "D014",
+  "title": "Soft Delete Only",
+  "status": "accepted",
+  "date": "2026-06-12",
+  "scope": "backend",
+  "rule": "Physical deletion prohibited",
+  "exceptions": [
+    "approved retention cleanup"
+  ]
+}

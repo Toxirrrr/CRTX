@@ -1,0 +1,25 @@
+{
+  "version": "1.0",
+  "description": "CRTX Cost Policy — defines agent budget limits per risk level. Provider-neutral.",
+  "maxSubagentDepth": 1,
+  "maxRuntimeMinutes": 120,
+  "note": "Nested subagent chains are prohibited (maxSubagentDepth = 1).",
+  "limits": {
+    "LOW":      { "maxAgents": 1 },
+    "MEDIUM":   { "maxAgents": 2 },
+    "HIGH":     { "maxAgents": 3 },
+    "CRITICAL": { "maxAgents": 4 }
+  },
+  "capabilities": {
+    "subagent-driven-development": {
+      "allowedRisks":   ["HIGH", "CRITICAL"],
+      "allowedDomains": ["cross-module", "architecture", "migration"]
+    }
+  },
+  "capsuleTTL": {
+    "file":       86400,
+    "review":    604800,
+    "execution": 259200,
+    "default":    86400
+  }
+}

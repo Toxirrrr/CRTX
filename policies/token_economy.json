@@ -1,0 +1,26 @@
+{
+  "version": "1.0",
+  "description": "CRTX Token Economy Policy — defines context loading priority and budget tiers.",
+  "priorityOrder": [
+    "1. Decision Registry (crtx/decisions/)",
+    "2. Skill Registry (crtx/policies/skills/)",
+    "3. Evidence Registry (crtx/evidence/)",
+    "4. Capsules (crtx/capsules/)",
+    "5. Reviews (crtx/memory/reviews/)",
+    "6. Raw task history — only if no capsule exists"
+  ],
+  "rule": "Never load raw history if a capsule exists.",
+  "contextTiers": {
+    "<20k":    { "strategy": "normal",               "capsule": "optional" },
+    "20k-50k": { "strategy": "capsule preferred",    "capsule": "recommended" },
+    "50k-100k":{ "strategy": "capsule only",         "capsule": "required" },
+    ">100k":   { "strategy": "mandatory compression","capsule": "required", "action": "compress before delegation" }
+  },
+  "modelBudgets": {
+    "claude-haiku-4-5":  20000,
+    "claude-sonnet-4-6": 80000,
+    "claude-opus-4-6":   120000,
+    "claude-fable-5":    60000,
+    "gemini-3.1-pro-high": 200000
+  }
+}

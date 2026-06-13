@@ -1,0 +1,20 @@
+{
+  "skill": "Role Ceiling Matrix",
+  "roles_hierarchy": [
+    "SUPER_ADMIN",
+    "OWNER_COMPANY",
+    "MANAGER",
+    "AGENT",
+    "DRIVER",
+    "MERCHANDISER"
+  ],
+  "permissions_ceiling": {
+    "SUPER_ADMIN": ["OWNER_COMPANY", "MANAGER", "AGENT", "DRIVER", "MERCHANDISER"],
+    "OWNER_COMPANY": ["MANAGER", "AGENT", "DRIVER", "MERCHANDISER"],
+    "MANAGER": ["AGENT", "DRIVER", "MERCHANDISER"],
+    "AGENT": [],
+    "DRIVER": [],
+    "MERCHANDISER": []
+  },
+  "instruction": "Agents must strictly use ONLY these roles. Do not invent new roles. Role hierarchy grants implicit access downwards."
+}

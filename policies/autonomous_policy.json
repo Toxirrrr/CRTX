@@ -1,0 +1,17 @@
+{
+  "skill": "Autonomous Work Policy",
+  "can_decide": [
+    "refactor",
+    "tests",
+    "DTO",
+    "lint"
+  ],
+  "must_escalate": [
+    "RBAC",
+    "Auth",
+    "Tenant Isolation",
+    "DB Schema",
+    "Deletion Policy"
+  ],
+  "instruction": "If a task requires changing 'must_escalate' items, the agent must pause and request explicit permission or assign a reviewer (Fable 5). Do not decide on these autonomously."
+}

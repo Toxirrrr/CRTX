@@ -1,0 +1,81 @@
+{
+  "version": "1.0",
+  "description": "CRTX Runtime Registry. Active runtimes for this project.",
+  "integrationLevels": {
+    "0": "File-based integration (read/write shared files)",
+    "1": "Runtime adapter (structured task input/output)",
+    "2": "Full event integration (task bus + heartbeat + memory)"
+  },
+  "runtimes": [
+    {
+      "id": "claude-code",
+      "provider": "anthropic",
+      "level": 2,
+      "capabilities": ["coding", "security-review", "architecture", "review", "analysis"],
+      "models": ["claude-haiku-4-5", "claude-sonnet-4-6", "claude-opus-4-6", "claude-fable-5"]
+    },
+    {
+      "id": "antigravity",
+      "provider": "google+anthropic",
+      "level": 2,
+      "capabilities": ["analysis", "coding", "review", "architecture"],
+      "models": ["gemini-3.1-pro-high", "claude-sonnet-4-6", "claude-opus-4-6"]
+    },
+    {
+      "id": "cursor",
+      "provider": "any",
+      "level": 1,
+      "capabilities": ["coding"],
+      "models": ["any"]
+    },
+    {
+      "id": "windsurf",
+      "provider": "any",
+      "level": 1,
+      "capabilities": ["coding"],
+      "models": ["any"]
+    },
+    {
+      "id": "codex-cli",
+      "provider": "openai",
+      "level": 1,
+      "capabilities": ["coding"],
+      "models": ["gpt-4o", "gpt-5"]
+    },
+    {
+      "id": "continue",
+      "provider": "any",
+      "level": 1,
+      "capabilities": ["coding"],
+      "models": ["any"]
+    },
+    {
+      "id": "cline",
+      "provider": "any",
+      "level": 1,
+      "capabilities": ["coding"],
+      "models": ["any"]
+    },
+    {
+      "id": "aider",
+      "provider": "any",
+      "level": 0,
+      "capabilities": ["coding"],
+      "models": ["any"]
+    },
+    {
+      "id": "opencode",
+      "provider": "any",
+      "level": 0,
+      "capabilities": ["coding"],
+      "models": ["any"]
+    }
+  ],
+  "capabilityRouting": {
+    "coding":          { "preferred": ["claude-code", "antigravity", "cursor"] },
+    "security-review": { "preferred": ["claude-code", "antigravity"] },
+    "architecture":    { "preferred": ["claude-code", "antigravity"] },
+    "review":          { "preferred": ["claude-code", "antigravity"] },
+    "analysis":        { "preferred": ["antigravity", "claude-code"] }
+  }
+}

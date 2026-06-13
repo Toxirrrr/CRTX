@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.env
+.env.local
+
+# Agent runtime data
+tasks/*.json
+!tasks/_TEMPLATE.json
+evidence/*.md
+evidence/*.json
+memory/*.json
+capsules/*.json
+capsules/*.md
+agents/*.status.json

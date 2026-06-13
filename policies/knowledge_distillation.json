@@ -1,0 +1,14 @@
+{
+  "skill": "Knowledge Distillation",
+  "version": "2.0",
+  "trigger": "Upon completion of any task involving errors or pattern violations",
+  "pipeline": "error → Evidence (E-*.json) → [3+ occurrences] → Skill Proposal (SP-*.json) → [approved] → Skill (.md)",
+  "action": "Record each error as Evidence. Do not create Skills directly. Wait for 3+ evidence items sharing the same pattern before drafting a Skill Proposal.",
+  "rationale": "Prevents memory bloating. 100 incidents → 10 evidence items → 3 proposals → 1 skill.",
+  "policy_ref": "memory/skills/skill_evolution_policy.json",
+  "templates": {
+    "evidence": "memory/evidence/E-TEMPLATE.json",
+    "proposal": "memory/decisions/SP-TEMPLATE.json"
+  }
+}
+

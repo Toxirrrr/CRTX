@@ -1,0 +1,11 @@
+{
+  "skill": "Release Gate",
+  "requirements_before_done": {
+    "Build": "Application must compile without errors",
+    "Lint": "No linting or formatting errors",
+    "Tests": "Unit and E2E tests must pass",
+    "Review": "Code-reviewer or Fable 5 must approve",
+    "Security": "Tenant isolation and soft-delete rules verified"
+  },
+  "rule": "If ANY requirement is failed or unverified, task != done. Do not close the task."
+}

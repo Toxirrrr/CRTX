@@ -1,0 +1,11 @@
+{
+  "id": "D019",
+  "title": "System-actor audit logs (nullable AuditLog.performedBy + performedByType)",
+  "status": "accepted",
+  "date": "2026-06-14",
+  "scope": "backend",
+  "rule": "AuditLog.performedBy is nullable and AuditLog gains performedByType enum (USER | SYSTEM, default USER). Human-performed actions keep performedBy=<userId>, performedByType=USER. System-originated actions (cron/StaleTaskRecovery, BullMQ jobs, AI/sync/reconciliation processors) write performedBy=null, performedByType=SYSTEM — they are not Users and must not borrow a fake 'system' user id. Category-C schema change, owner-approved 2026-06-14.",
+  "exceptions": [],
+  "context": "Found by the full-module stress test (BUG-S4): recoverStaleTask wrote auditLog.create({ performedBy: 'system-stale-recovery' }) but performedBy was a REQUIRED FK to User, so the FK violation rolled back the whole recovery transaction — stale tasks were never recovered. Interim fix removed the audit write (TaskStatusLog already records the recovery). This decision restores a proper, type-tagged system-actor audit and unblocks all future non-user audit writers.",
+  "migration": "ALTER audit_logs.performed_by DROP NOT NULL; ADD performed_by_type AuditActorType DEFAULT 'USER'; FK performer User? (SET NULL). Applied to the live dev DB via migrate deploy (no reset — 100 orgs / 1990 agents / 391k locations preserved per owner)."
+}

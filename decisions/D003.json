@@ -1,0 +1,9 @@
+{
+  "id": "D003",
+  "title": "Backend DoD (100/100)",
+  "status": "accepted",
+  "date": "2026-06-12",
+  "scope": "backend",
+  "rule": "Backend is stable when: compiles with 0 errors, lints with 0 errors, builds with success, tests run green, Prisma client is current, layering (Prisma accessed only in repositories) is followed, tenant isolation holds, guards are enforced, soft-delete is used, no regressions occur.",
+  "exceptions": []
+}

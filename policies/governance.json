@@ -1,0 +1,32 @@
+
+{
+  "version": "1.0",
+  "description": "CRTX Governance Policy — domains requiring mandatory human escalation. Agents may NOT autonomously approve changes in these domains.",
+  "mandatoryEscalation": [
+    "RBAC",
+    "Tenant Isolation",
+    "Authentication",
+    "Authorization",
+    "Database Schema",
+    "Deletion Policy"
+  ],
+  "escalationRule": "Any change touching the above domains must be flagged to the human orchestrator and blocked until explicit approval is received.",
+  "architecture": {
+    "coreChain": "Task → Capability → Runtime → Provider → Model",
+    "forbidden": [
+      "Assigning a task directly to a model (e.g. 'owner: claude')",
+      "Assuming a specific IDE or agent framework",
+      "Hardcoding provider names in task definitions",
+      "Nested subagent chains deeper than 1 level"
+    ]
+  },
+  "runtimeCompatibility": {
+    "requirement": "Any runtime may participate if it can: (1) receive a task, (2) execute work, (3) return a result.",
+    "levels": {
+      "0": "File-based integration",
+      "1": "Runtime adapter",
+      "2": "Full event integration"
+    },
+    "preference": "Always prefer open integration over vendor lock-in."
+  }
+}

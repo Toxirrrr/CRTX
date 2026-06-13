@@ -1,0 +1,12 @@
+{
+  "id": "D015",
+  "title": "Tenant Isolation",
+  "status": "accepted",
+  "date": "2026-06-12",
+  "scope": "backend",
+  "rule": "Every tenant-owned query must be scoped by organizationId (verified, not assumed) across API, sockets, analytics, and exports.",
+  "exceptions": [
+    "organizations.repository.ts (tenant root)",
+    "jwt.strategy (auth bootstrap)"
+  ]
+}

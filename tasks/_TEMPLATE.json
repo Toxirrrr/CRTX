@@ -1,0 +1,13 @@
+{
+  "id": "F00",
+  "title": "Short description of the task",
+  "owner": "claude",
+  "status": "pending",
+  "domain": "META",
+  "files": [
+    "server/src/modules/example/example.service.ts"
+  ],
+  "createdAt": "2026-06-12T00:00:00Z",
+  "updatedAt": "2026-06-12T00:00:00Z",
+  "notes": ""
+}
