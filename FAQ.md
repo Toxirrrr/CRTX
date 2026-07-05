@@ -1,6 +1,14 @@
-# FAQ: Why not...
+# FAQ & Guidelines
 
-When building an orchestration system for AI agents, it's natural to compare CRTX against existing patterns. Here is an honest breakdown of what CRTX is designed to do, and why other solutions might fall short for this specific use case.
+## When NOT to use CRTX
+
+To maintain trust, we are upfront about CRTX's boundaries. **CRTX is probably not the right choice if:**
+- You are building a single-agent chatbot or simple consumer LLM wrapper.
+- You don't need persistent, deterministic task state between agent sessions.
+- Your entire workflow relies on (and is happy with) one proprietary runtime (e.g., exclusively OpenAI's Assistants API).
+- You are only automating short-lived, trivial prompts that don't require architectural context.
+
+---
 
 ## Why not a shared chat?
 
