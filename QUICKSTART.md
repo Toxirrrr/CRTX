@@ -9,6 +9,8 @@ git clone https://github.com/Toxirrrr/CRTX.git
 cd CRTX/crtx
 ```
 
+*Expected output:* You should be in the `crtx` root directory.
+
 ## 2. Install Dependencies
 
 CRTX uses a lightweight local coordination engine.
@@ -17,7 +19,13 @@ CRTX uses a lightweight local coordination engine.
 npm install
 ```
 
-## 3. Run the Smoke Test
+*Expected output:*
+```text
+added X packages, and audited Y packages in Zs
+found 0 vulnerabilities
+```
+
+## 3. Verify Installation (Smoke Test)
 
 Verify that your system is ready for capability routing:
 
@@ -25,14 +33,17 @@ Verify that your system is ready for capability routing:
 npm run demo
 ```
 
-You should see:
+*Expected output:*
 ```text
 ✓ Runtime initialized
 ✓ Tasks loaded
 ✓ Evidence created
 ✓ Capsule generated
-Demo completed.
+
+Demo completed. Your environment is ready for Capability Routing.
 ```
+
+*(If you do not see these checkmarks, please consult the Troubleshooting section below).*
 
 ## 4. Experience the "Aha!" Moment
 
@@ -53,5 +64,9 @@ The easiest way to understand CRTX is to run **Example 1: Multi-Agent Handoff**.
 
 ## Troubleshooting
 
-- **Agent says it cannot find the task**: Ensure you opened the *specific* example folder (`01-multi-agent-handoff`) in your IDE, not the root repository. The agent relies on reading its current working directory.
-- **Agent tries to do research again**: Tell the agent: "Strictly follow the `capsules/C001-api-summary.md` and only execute pending capabilities."
+| Problem | Possible Reason | Solution |
+|---|---|---|
+| `npm run demo` fails with "Command not found" | Node.js/npm not installed | Install Node.js v20+ and try again. |
+| `npm run demo` fails with "Missing modules" | Dependencies missing | Run `npm install` in the `crtx` folder. |
+| Agent says it cannot find `T001-research-api.json` | Wrong working directory | Ensure you opened the *specific* example folder (`examples/01-multi-agent-handoff`) in your IDE, not the repository root. |
+| Agent tries to perform the research again | Agent hallucinated instructions | Tell the agent: "Strictly follow the `capsules/C001-api-summary.md` and only execute pending capabilities." |

@@ -1,104 +1,120 @@
 <div align="center">
   <h1>CRTX</h1>
-  <p><strong>A Provider-Neutral, Filesystem-Native Coordination Runtime for AI Teams</strong></p>
   <p>
-    <a href="./QUICKSTART.md">Quick Start</a> •
-    <a href="./examples/README.md">Examples</a> •
-    <a href="./ROADMAP.md">Roadmap</a> •
-    <a href="./FAQ.md">FAQ</a> •
-    <a href="./CHANGELOG.md">Changelog</a>
+    <a href="https://github.com/Toxirrrr/CRTX/releases"><img src="https://img.shields.io/github/v/release/Toxirrrr/CRTX" alt="Release"></a>
+    <a href="./LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License"></a>
   </p>
+  <p><strong>A Provider-Neutral, Filesystem-Native Coordination Runtime for AI Teams</strong></p>
 </div>
 
 Every AI tool right now wants to own your entire workflow. They lock you into their IDE, tether you to their models, and constrain you within their context windows. 
 
-**CRTX brings Git-like workflows to AI engineering.** It is a shared, transparent protocol where human developers and AI systems synchronize their work.
+**CRTX brings Git-like workflows to AI engineering.** It decouples the *work* from the *runtime*, turning isolated AI agents (Claude, Cursor, Aider) into a synchronized engineering team that coordinates entirely via the filesystem.
 
-But building production-grade software isn't just about generating code faster in a chat box. **It's about coordination.**
+---
 
-**CRTX** is an open-source orchestration runtime that turns isolated AI agents—Claude Code, Cursor, Windsurf, Aider, and local LLMs—into a synchronized, autonomous engineering team. Instead of trapping agents in a closed, memory-heavy API loop, CRTX uses the **filesystem** as the ultimate source of truth. 
+## The Architecture
+
+Instead of sending massive prompts to a single model, CRTX routes work based on **Capabilities**.
+
+```mermaid
+flowchart LR
+    A[Task] -->|Requires| B(Capability)
+    B -->|Routed to| C{Runtime}
+    C -->|Executes via| D[Provider]
+    D --> E((Model))
+```
+
+To coordinate this without losing context, CRTX relies on a structured filesystem:
+- 📁 **`tasks/`**: The workload and state machine.
+- 📁 **`evidence/`**: Cryptographic proofs of successful execution.
+- 📁 **`capsules/`**: Snapshot memory to pass context between agents without exploding token limits.
+- 📁 **`decisions/`**: Immutable Architecture Decision Records (ADRs).
+- 📁 **`skills/`**: Standard Operating Procedures for capabilities.
+
+---
 
 ## Why CRTX?
 
-Relying on a single vendor's agent creates a hard ceiling. Context windows overflow, architecture is forgotten, and developers spend more time correcting "AI slop" than reviewing logic.
+| Problem | Typical Solution | CRTX Architecture |
+|---------|------------------|-------------------|
+| **Prompt history overflow** | Copy / Paste | 📦 **Capsules** (Deterministic state handoffs) |
+| **Vendor lock-in** | Model-specific agents | 🚦 **Capability Routing** (Any runtime works) |
+| **Context explosion** | Shared Chat Windows | 🗄️ **Structured Memory** (Filesystem-native) |
 
-Traditional orchestration frameworks try to fix this by building massive, opaque state machines. **CRTX is different.** It is Zero-Waste and completely Provider-Neutral. It decouples the work from the vendor.
+---
 
-### Capability-Based Routing
+## Features
+- **Zero Context Loss**: Resume complex refactoring tasks instantly after an IDE crash.
+- **Provider Independence**: Seamlessly hand off a task from Claude to a Local LLaMA mid-workflow.
+- **Verifiable Execution**: Code is only considered complete when cryptographic `Evidence` is generated.
+- **IDE Agnostic**: Works perfectly alongside Cursor, Windsurf, Copilot, or CLI agents like Aider.
 
-Instead of sending a massive prompt to a single model and hoping for the best, CRTX evaluates the required *Capability* (e.g., "Architecture Review", "E2E Testing", "Frontend Implementation") and dynamically routes the work to the best available runtime on your machine. This enables parallel execution across multiple runtimes while preserving task isolation and coordination.
+---
 
-```mermaid
-flowchart TD
-    A[Developer] --> B[Task]
-    B --> C[Capability Router]
-    C --> D[Runtime / Agent]
-    D --> E[Result]
-    E --> F[Evidence]
-    F --> G[Capsule]
-```
+## 🚀 5-Minute Quick Start
 
-*(This architecture demonstrates how CRTX acts as a knowledge and lifecycle management system, not just a task router).*
+Get CRTX up and running in your local environment immediately.
 
-## CRTX vs. Traditional AI Workflows
-
-| Feature | CRTX | Traditional Chat Workflow |
-|---------|------|---------------------------|
-| **Persistent task state** | ✅ Filesystem-native | ❌ Lost when tab closes |
-| **Provider-neutral** | ✅ Agnostic | ⚠️ Tool-dependent |
-| **File-based coordination** | ✅ Universal protocol | ❌ Closed loop |
-| **Shared evidence & QA** | ✅ Cryptographic proofs | ⚠️ Limited by context window |
-
-## The Software Factory
-
-CRTX replaces chaotic prompting with structured, verifiable directories. Any compatible AI runtime can instantly plug into this ecosystem just by reading the filesystem.
-
-- `tasks/` — **The Workload:** Agent assignments, dependency chains, and statuses. 
-- `capsules/` — **The Memory:** Snapshot states for transferring context between agents without exploding token limits.
-- `decisions/` — **The Architecture:** Immutable Architecture Decision Records (ADRs). Agents must read these before writing code.
-- `evidence/` — **The QA Lead:** Cryptographic proofs of successful testing and validation. No code merges without evidence.
-- `skills/` — **The Playbook:** Executable SOPs, prompts, and domain knowledge.
-- `runtime/` — **The Dispatcher:** Decentralized registry mapping capabilities to execution adapters.
-- `events/` — **The Audit Log:** A transparent log of every system state transition.
-- `ltce/` — **The Engine:** The Local Task Coordination Engine workspace containing packages for core orchestration, SQLite persistence, and SDKs.
-
-## The Constitution
-
-While other tools rely on a simple `config.json`, CRTX operates under a master `CONSTITUTION.md`. This is the absolute law for your AI team, establishing the boundaries of the system:
-- **Role-Based Access & Ceilings**
-- **Release Gates & Validation Rules**
-- **Token Economy & Budgets**
-- **Escalation Protocols** (When the AI must stop and ask a human)
-
-## What CRTX is NOT
-
-To set expectations clearly, CRTX is an orchestrator and a protocol, but it is **not**:
-- **Not an autonomous AI agent:** It doesn't write code itself. It coordinates the agents that do.
-- **Not a replacement for IDE assistants:** You still use Cursor or Windsurf for standard coding. CRTX handles the macro-architecture and background tasks.
-
-*(For a deeper dive into why we didn't use LangGraph, GitHub Issues, or shared chats, read our **[FAQ: Why not...](./FAQ.md)**).*
-
-## Who this is for
-
-- **Technical Founders & Teams** who want to orchestrate parallel AI agents to ship faster.
-- **Staff Engineers** looking for rigorous review, QA, and release automation on every PR.
-- **Open-Source Builders** who refuse to be locked into a single vendor's ecosystem.
-
-## 🚀 Quick Start & Smoke Test
-
-Get CRTX up and running in your local environment in under 5 minutes. 
-
-👉 **[Read the Quick Start Guide](./QUICKSTART.md)** to clone the repository, run the smoke tests, and experience the zero-context-loss workflow in your own IDE.
-
-## For Agents
-
-If you are an AI agent (Cursor, Windsurf, Claude) operating in a repository powered by CRTX, you do not need to boot an orchestrator to check your workload. 
-
-Simply read your assigned tasks from the `tasks/` directory:
+**1. Clone & Install**
 ```bash
-cat tasks/*.json | grep "your-agent-id"
+git clone https://github.com/Toxirrrr/CRTX.git
+cd CRTX/crtx
+npm install
 ```
-When you finish a task, update its `status` to `done` directly in the JSON file. Always consult `CONSTITUTION.md` before executing work.
+
+**2. Verify Installation (Smoke Test)**
+```bash
+npm run demo
+```
+*Expected Output:*
+```text
+✓ Runtime initialized
+✓ Tasks loaded
+✓ Evidence created
+✓ Capsule generated
+
+Demo completed. Your environment is ready for Capability Routing.
+```
+
+*(For deeper onboarding and troubleshooting, see the **[Full Quickstart Guide](./QUICKSTART.md)**).*
+
+---
+
+## 🎬 Demo
+
+*(Insert GIF here showing a 30-second multi-agent handoff inside Cursor/Windsurf)*
+
+---
+
+## 📚 Examples & Tutorials
+
+We have prepared standalone, reproducible examples that demonstrate CRTX in action. See the **[Examples Index](./examples/README.md)**.
+- **[01. Multi-Agent Handoff](./examples/01-multi-agent-handoff)**: The core CRTX capability loop.
+- **[02. Chat Recovery](./examples/02-chat-recovery)**: Zero context loss after an IDE crash.
+- **[03. Provider Switch](./examples/03-provider-switch)**: Swapping from Claude to Gemini.
+
+---
+
+## 📖 Documentation
+
+- **[Repository Tour](docs/REPOSITORY_TOUR.md)**: What every folder does.
+- **[Design Principles](docs/DESIGN_PRINCIPLES.md)**: The architectural tenets of CRTX.
+- **[FAQ](FAQ.md)**: Why we didn't use LangGraph, AutoGen, or GitHub Issues.
+- **[Project Status](PROJECT_STATUS.md)**: What is stable vs. experimental.
+- **[Releases](docs/RELEASES.md)**: Versioning and stability policy.
+
+---
+
+## 🗺 Roadmap & Changelog
+- **[Roadmap](ROADMAP.md)**
+- **[Changelog](CHANGELOG.md)**
+
+---
+
+## 🤝 Contributing
+We aim to build the industry standard for open-source AI orchestration. Please read our **[Contributing Guide](CONTRIBUTING.md)** and review our **[GitHub Labels](docs/GITHUB_LABELS.md)** before submitting a PR.
+- **[Security Policy](SECURITY.md)**
 
 ## License
 MIT License. Free forever. Fork it, improve it, make it yours.
