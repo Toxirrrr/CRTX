@@ -1,0 +1,9 @@
+{
+  "id": "D001",
+  "title": "Autonomy Mandate",
+  "status": "accepted",
+  "date": "2026-06-12",
+  "scope": "orchestrator",
+  "rule": "Claude operates autonomously without per-step approval: audit -> fix -> decide -> record -> continue. The human reviews afterwards.",
+  "exceptions": []
+}

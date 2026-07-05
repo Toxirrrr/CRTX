@@ -1,0 +1,11 @@
+{
+  "id": "D017",
+  "title": "Organization Guard",
+  "status": "accepted",
+  "date": "2026-06-12",
+  "scope": "backend",
+  "rule": "Every business controller must use the canonical triple-guard (JwtAuthGuard, OrganizationGuard, Roles/PermissionsGuard) and explicit RBAC (@Roles or RequirePermissions).",
+  "exceptions": [
+    "organizations.controller.ts (SUPER_ADMIN-only; manages Organization entities themselves, not org-scoped business data — OrganizationGuard doesn't apply regardless of D022)"
+  ]
+}

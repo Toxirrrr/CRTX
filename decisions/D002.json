@@ -1,0 +1,9 @@
+{
+  "id": "D002",
+  "title": "Priority: finish Agent Ops Platform before building orchestrator",
+  "status": "accepted",
+  "date": "2026-06-12",
+  "scope": "meta",
+  "rule": "Stop investing in agent-orchestrator autonomy features. First bring the Agent Ops Platform (server, then client) to a stable state.",
+  "exceptions": []
+}

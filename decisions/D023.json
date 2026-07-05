@@ -1,0 +1,29 @@
+{
+  "id": "D023",
+  "title": "Release-Candidate P0 Closure — Tenant-Isolation / RBAC Escalation Sign-off",
+  "status": "APPROVED",
+  "date": "2026-07-02",
+  "domain": "ADMINISTRATION / OPERATIONS-Realtime",
+  "escalation": "Mandatory escalation domain (RBAC + Tenant Isolation per CONSTITUTION.md). This record is the required decision + evidence trail for two tenant-isolation fixes plus one realtime-init fix that were shipped during RC hardening.",
+  "description": "Three release-candidate P0 blockers found during the 2026-06-28 full-system audit were closed under the AUDIT -> REPRODUCE -> ROOT-CAUSE -> IMPLEMENT -> VALIDATE -> REGRESSION -> CLOSE protocol with the smallest production-safe fix, preserving RBAC, tenant isolation, and event-driven design. Evidence: crtx/evidence/E-RC-P0.json (E-RC-P0-1..3).",
+  "decisions": [
+    "P0-1 (Organizations cross-tenant IDOR): CHOSE self-scoping over PlatformGuard-lock — add OrganizationGuard + assertOrgAccess(id === user.organizationId, PLATFORM_ADMIN bypass) on all by-id routes; findAll org-scoped. Rationale: legacy /api/v1/organizations is a live tenant self-service surface (settings/config), so a platform-only lock would break tenant functionality. APPROVED.",
+    "P0-2 (WS join_room fall-through): CHOSE terminal default-deny else{return} — reject any room id not explicitly validated. Broadcast rooms are joined server-side from verified JWT, never via client join_room, so no legitimate functionality lost. APPROVED.",
+    "P0-3 (/live realtime not initialized on direct load): frontend-only lifecycle fix, no RBAC/tenant-isolation surface — bind startSync/stopSync to the /live page (layout:false) and drop the write-once module guard. APPROVED."
+  ],
+  "constraints_honored": [
+    "Smallest production-safe fix, no refactors.",
+    "RBAC matrix unchanged (no new permissions granted; P0-1 tightens enforcement only).",
+    "Tenant isolation strengthened, not weakened.",
+    "Emit-after-write / event-driven design untouched."
+  ],
+  "validation": "Backend build clean; nuxt typecheck clean. Regression: tenant-isolation.e2e-spec.ts 13/13, organizations unit 6/6, rooms.gateway.spec.ts 6/6, live-realtime-init.spec.ts 4/4 (at original closure). On-disk re-verification 2026-07-02 confirms all three fixes present after the user's frontend rollback (P0-3 edits re-applied).",
+  "residual_risk": [
+    "2026-07-02 user rollback wiped the e2e/ Playwright harness incl. live-realtime-init.spec.ts (user WIP) — P0-3 regression spec must be recreated when the harness is restored; browser re-validation is the interim gate.",
+    "Client eslint gate still crashes (eslint-plugin-agent-ops.mjs:56, pre-existing) — not from these changes.",
+    "E-SEC24-001 trust-proxy residual (co-located-proxy edge + env-var bypasses) remains deferred, separate from these P0s."
+  ],
+  "relatedEvidence": ["E-RC-P0-1", "E-RC-P0-2", "E-RC-P0-3"],
+  "supersedes": null,
+  "relatedDecisions": ["D022"]
+}

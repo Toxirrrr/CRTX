@@ -1,0 +1,15 @@
+{
+  "id": "D022",
+  "title": "Strict Bounded Contexts: Platform vs Organization",
+  "status": "APPROVED",
+  "date": "2026-06-28",
+  "description": "Architectural separation of the Platform Context and Organization Context across the entire Agent Ops Platform.",
+  "rules": [
+    "Platform Context and Organization Context must NEVER overlap.",
+    "Platform routes are prefixed with '/platform'. Organization routes are prefixed with '/app'.",
+    "PLATFORM_OWNER role is restricted to Platform Context only.",
+    "Organization users (ORGANIZATION_ADMIN, etc.) are restricted to Organization Context only.",
+    "WebSockets rooms must strictly adhere to the 'room:platform:*' vs 'room:org:{id}:*' namespace split.",
+    "Permissions are strictly namespaced (e.g., 'platform:users:*' vs 'organization:users:*')."
+  ]
+}

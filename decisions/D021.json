@@ -1,0 +1,25 @@
+{
+  "id": "D021",
+  "title": "UX-3 Page Action Architecture (Action Taxonomy Standard)",
+  "status": "implemented",
+  "date": "2026-06-27",
+  "scope": "frontend",
+  "rule": "Every interactive control resolves to exactly one of five LOCKED action classes: PRIMARY_ACTION (one per surface, variant=primary, rightmost), SECONDARY_ACTION (variant=outline, left of primary), DANGER_ACTION (variant=destructive, never in a page header, always confirmed), WORKFLOW_ACTION (operational state transitions — Approve/Reject/Assign/Dispatch/Complete — a distinct class, never generic CRUD/navigation), NAVIGATION_ACTION (links/breadcrumbs/row-click, never CTA weight). Create action has one org-wide token: 'Создать <noun>' ('Добавить' and 'Новый/ая' eliminated for create). Dashboard Quick Actions must be real actions (Создать задачу/заказ/возврат, Назначить маршрут), never sidebar-navigation duplicates. Form submit labels distinguish create ('Создать') from edit ('Сохранить изменения'); cancel always 'Отмена'. List pages use the header contract (title text-xl font-semibold, justify-between, SECONDARY then PRIMARY rightmost, no danger and no raw filters in header) and AppTable + AppSearchFilter (no raw <table>/<input>). Row click = Open Entity via onRowClick (drawer for editable entities, route to /[id] for entities with a dedicated detail page).",
+  "exceptions": [],
+  "binding": "Mandatory standard, not a recommendation. Binding for all new frontend work and for mobile/ before Mobile Foundation begins.",
+  "standard_doc": "crtx/decisions/UX-3-page-action-architecture.md",
+  "relates_to": ["UX-1 Navigation Foundation", "UX-2 Button Foundation"],
+  "context": "Two audits (Button Architecture + Page Action Architecture) concluded the defect is action architecture, not button styling. Module-by-module construction produced four UX defects: Create Verb Fragmentation, Navigation vs Action Confusion, Entity Navigation Inconsistency, CRUD vs Workflow Conflation. Conformance baseline at ratification ~58/100 (conformant references: users, inventory, visits; worst offender: sales raw-table page; dashboard quick-actions = 100% navigation duplicates).",
+  "execution_sequence": [
+    "UX-3A: ratify this decision (freeze-safe, done 2026-06-27)",
+    "UX-3B: Dashboard Quick Actions -> real actions",
+    "UX-3C: sales -> AppTable migration",
+    "UX-3D: Create Verb unification (Создать)",
+    "UX-3E: Navigation/Link taxonomy (onRowClick, breadcrumbs)",
+    "UX-3F: Workflow Action system (distinct WORKFLOW_ACTION styling)"
+  ],
+  "freeze_note": "Implementation (UX-3B..3F) is a multi-module UX restructure, NOT bug/security/deploy — blocked by rc-2026-06-26 freeze. Executes after freeze lifts and BEFORE Mobile Foundation. Only this ratification (docs) is performed under freeze.",
+  "enforcement_skill": "crtx/policies/skills/page-action-architecture.md (terse rule-sheet; referenced from crtx/policies/skills/frontend.md so frontend-engineer loads it at implementation time)",
+  "progress": "UX-3 FULLY SEALED 2026-06-27 — all 5 execution slices shipped, validated (client type-check EXIT 0 each), browser-verified, and committed atomically on client branch feat/status-taxonomy-connectivity, isolated from unrelated status-taxonomy WIP throughout: UX-3D Create-verb unification (commit 4c623ef, 10 CTAs/9 pages) -> UX-3B dashboard Quick Actions to real create actions (commit 3b22a95, TaskDrawer/VisitDrawer/StoreDrawer wired) -> UX-3C sales->AppTable migration (commit c529e5e, worst offender fixed) -> UX-3E navigation/link taxonomy (commit ffbc1d2, onRowClick consolidated across 6 pages incl. inventory, Назад back-link de-buttonized) -> UX-3F workflow action class (commit 7a94d1c, replenishment Approve/Reject + tasks bulk-Assign moved off primary/destructive onto the indigo `workflow` AppButton variant, which a concurrent WIP had already introduced for TaskDrawer's status actions — this closed the gap to the remaining surfaces).",
+  "followup": "Enforcement skill bound 2026-06-27 (page-action-architecture.md). UX-3 closed: Navigation (UX-1) + Button (UX-2) + Page Action (UX-3) foundations all sealed -> ready to open Mobile Foundation track per the user's sequencing. Open items NOT part of UX-3, left as backlog: OrderDrawer/ReturnDrawer do not exist on web (orders:create/returns:create exist in backend RBAC, BE-ready/FE-missing); TaskDrawer's internal create title still reads 'Новая задача' (label-only, low-risk, could be swept opportunistically); replenishment/index.vue's inline Утвердить/Отклонить migrated off raw UButton but other raw-UButton usages may exist elsewhere (not audited)."
+}

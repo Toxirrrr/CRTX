@@ -1,0 +1,9 @@
+{
+  "id": "D018",
+  "title": "Event Naming Policy",
+  "status": "accepted",
+  "date": "2026-06-12",
+  "scope": "backend",
+  "rule": "Live WebSocket event names must be colon-style (e.g., agent:location, task:updated) based on WS_EVENTS. Internal-bus dead listeners are dot-style and should be removed.",
+  "exceptions": []
+}

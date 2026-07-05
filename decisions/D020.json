@@ -1,0 +1,13 @@
+{
+  "id": "D020",
+  "title": "Postgres 16 Migration",
+  "status": "approved",
+  "date": "2026-06-16",
+  "author": "antigravity",
+  "context": "The database needs to be migrated to Postgres 16 (PostGIS 3.4) to stay up to date and benefit from performance improvements. An orphaned task (F99) was created for this and parked. The user explicitly requested to execute it.",
+  "decision": "Upgrade the docker-compose postgis image from 15-3.3-alpine to 16-3.4-alpine. Developers must rebuild their local volumes.",
+  "consequences": [
+    "Downtime is required for dev environments as Postgres 15 data directory is not compatible with Postgres 16.",
+    "Developers must run `docker compose down -v` to clear the old volume."
+  ]
+}

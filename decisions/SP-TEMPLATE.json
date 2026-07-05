@@ -1,0 +1,14 @@
+{
+  "id": "SP-TEMPLATE",
+  "status": "PENDING",
+  "pattern": "missing-org-scope",
+  "evidence_refs": [
+    "E-{id1}",
+    "E-{id2}",
+    "E-{id3}"
+  ],
+  "suggested_rule": "Repository methods returning organization-owned data must require organizationId as a mandatory parameter.",
+  "expected_benefit": "Prevents cross-tenant data leakage at the query level across all future features.",
+  "token_impact": "POSITIVE",
+  "_note": "THIS IS A TEMPLATE — copy and rename to SP-{SEQ}.json. Requires 3+ evidence_refs before APPROVED."
+}
