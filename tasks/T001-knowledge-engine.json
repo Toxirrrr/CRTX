@@ -1,0 +1,19 @@
+{
+  "id": "T001-knowledge-engine",
+  "title": "Design Structured UX/UI Knowledge Corpus",
+  "status": "pending",
+  "priority": "high",
+  "capability": "extraction",
+  "target_workspace": "c:/WEB/REAL/PORTFOLIO",
+  "requirements": [
+    "Execute Phase 2: Pattern Extraction",
+    "Extract patterns from Tier 1 sources using the defined schema",
+    "Populate knowledge subdirectories with valid JSON patterns"
+  ],
+  "history": [
+    "2026-07-06T03:00:00+05:00 - Task created via CRTX Dogfooding Initiative",
+    "2026-07-06T03:10:00+05:00 - Task scope redefined: Focus on Pattern extraction schema rather than raw scraping",
+    "2026-07-06T03:15:00+05:00 - [Capability: research] completed. Schema and directories scaffolded.",
+    "2026-07-06T03:15:00+05:00 - Capability routed to: extraction"
+  ]
+}
