@@ -1,0 +1,30 @@
+{
+  "id": "T002",
+  "title": "Refactor Authentication Module",
+  "status": "in_progress",
+  "capability": "implementation",
+  "priority": "high",
+  "objective": "Migrate the legacy session-based authentication to a stateless JWT architecture while maintaining backward compatibility for v1 mobile clients.",
+  "history": [
+    {
+      "step": 1,
+      "capability": "architecture_design",
+      "status": "completed",
+      "output": "evidence/E002-auth-architecture.md",
+      "capsule": "capsules/C002-auth-state-v1.md"
+    },
+    {
+      "step": 2,
+      "capability": "implementation",
+      "status": "interrupted",
+      "error": "Context window exceeded / Agent crash",
+      "capsule": "capsules/C002-auth-state-v2.md"
+    },
+    {
+      "step": 3,
+      "capability": "implementation",
+      "status": "pending",
+      "input": "capsules/C002-auth-state-v2.md"
+    }
+  ]
+}

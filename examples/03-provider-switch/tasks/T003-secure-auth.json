@@ -1,0 +1,34 @@
+{
+  "id": "T003",
+  "title": "Implement RBAC (Role-Based Access Control)",
+  "status": "in_progress",
+  "capability": "security_review",
+  "priority": "high",
+  "objective": "Implement an RBAC system to restrict API access based on user roles (Admin, Editor, Viewer). Must pass a strict security audit before merge.",
+  "history": [
+    {
+      "step": 1,
+      "capability": "research",
+      "status": "completed",
+      "output": "evidence/E003-rbac-strategy.md"
+    },
+    {
+      "step": 2,
+      "capability": "implementation",
+      "status": "completed",
+      "output": "evidence/E003-implementation.md",
+      "capsule": "capsules/C003-security-audit-request.md"
+    },
+    {
+      "step": 3,
+      "capability": "security_review",
+      "status": "pending",
+      "input": "capsules/C003-security-audit-request.md"
+    },
+    {
+      "step": 4,
+      "capability": "architecture_review",
+      "status": "pending"
+    }
+  ]
+}
