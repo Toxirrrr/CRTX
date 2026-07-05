@@ -83,7 +83,15 @@ Demo completed. Your environment is ready for Capability Routing.
 
 ## 🎬 Demo
 
-*(Insert GIF here showing a 30-second multi-agent handoff inside Cursor/Windsurf)*
+<p align="center">
+  <img
+    src="./demo.gif"
+    alt="CRTX Demo"
+    width="900"
+  />
+</p>
+
+*(Note: If the GIF is too large, replace `demo.gif` with `demo.mp4` and use the `<video>` tag).*
 
 ---
 
