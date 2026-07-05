@@ -36,6 +36,7 @@ CRTX replaces chaotic prompting with structured, verifiable directories. Any com
 - `skills/` — **The Playbook:** Executable SOPs, prompts, and domain knowledge.
 - `runtime/` — **The Dispatcher:** Decentralized registry mapping capabilities to execution adapters.
 - `events/` — **The Audit Log:** A transparent log of every system state transition.
+- `ltce/` — **The Engine:** The Local Task Coordination Engine workspace containing packages for core orchestration, SQLite persistence, and SDKs.
 
 ## The Constitution
 
