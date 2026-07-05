@@ -7,7 +7,7 @@ const CONFIG_FILE = path.join(ROOT, 'notifications.config.json');
 
 /**
  * One Telegram bot per recipient. `owner` is the routing key:
- *   - an agent/owner name ('claude' | 'antigravity' | 'fable' | 'unassigned' …)
+ *   - an agent/owner name ('claude' | 'antigravity' | 'opus' | 'unassigned' …)
  *     → this bot only receives notifications whose task owner matches.
  *   - '*' → this bot receives everything (an all-seeing channel).
  */

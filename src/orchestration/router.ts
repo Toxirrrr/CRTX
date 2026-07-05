@@ -13,24 +13,26 @@ function getCapabilitiesText(): string {
     let text = '\n\n--- CRTX AUTO-INJECTED CAPABILITIES ---\n';
 
     // Primary: crtx/policies/skills/ (provider-neutral .md skill files)
-    const crtxSkillsDir = path.resolve(process.cwd(), 'policies/skills');
+    const crtxSkillsDir = path.resolve(__dirname, '../../policies/skills');
     if (fs.existsSync(crtxSkillsDir)) {
-      const skillFiles = fs.readdirSync(crtxSkillsDir)
-        .filter(f => f.endsWith('.md'))
-        .map(f => f.replace('.md', ''));
+      const skillFiles = fs.readdirSync(crtxSkillsDir).filter(f => f.endsWith('.md'));
       if (skillFiles.length > 0) {
-        text += `AVAILABLE SKILLS:\n- ${skillFiles.join('\n- ')}\n`;
+        text += `AVAILABLE SKILLS (INSTRUCTIONS):\n`;
+        for (const file of skillFiles) {
+          const content = fs.readFileSync(path.join(crtxSkillsDir, file), 'utf8');
+          text += `\n--- SKILL: ${file.replace('.md', '')} ---\n${content}\n`;
+        }
       }
     } else {
       // Fallback: legacy memory/skills.json
-      const skillsPath = path.resolve(process.cwd(), 'memory/skills.json');
+      const skillsPath = path.resolve(__dirname, '../../memory/skills.json');
       if (fs.existsSync(skillsPath)) {
         const skills = JSON.parse(fs.readFileSync(skillsPath, 'utf8'));
         text += `AVAILABLE SKILLS:\n- ${skills.join('\n- ')}\n`;
       }
     }
 
-    const mcpFilePath = path.resolve(process.cwd(), '../.mcp.json');
+    const mcpFilePath = path.resolve(__dirname, '../../../.mcp.json');
     if (fs.existsSync(mcpFilePath)) {
       const mcpData = JSON.parse(fs.readFileSync(mcpFilePath, 'utf8'));
       const servers = Object.keys(mcpData.mcpServers || {});
@@ -92,15 +94,14 @@ const SYSTEM_PROMPT = `
 You are the Master Orchestrator (Meta-Planner).
 1. Analyze the user's directive deeply and provide the MOST OPTIMAL approach in the "analysis" field.
 2. Break it into concrete "subTasks". Populate the 'dependsOn' array for sequential dependencies.
-3. For HIGH/CRITICAL risk tasks, you MUST assign a "reviewer" (e.g. "code-reviewer" or "fable") to enforce Pair Programming.
+3. For HIGH/CRITICAL risk tasks, you MUST assign a "reviewer" (e.g. "code-reviewer" or "claude" running Opus 4.8) to enforce Pair Programming.
 7. Model Selection Rules:
-   - Opus: architecture, planning, security (ONLY FOR CLAUDE AGENT. DO NOT assign Opus to Antigravity)
+   - Opus 4.8 (ultracode, high reasoning effort, workflows enabled): architecture, planning, security, final audit, release validation, code-review (ONLY FOR CLAUDE AGENT. DO NOT assign Opus to Antigravity)
    - Sonnet (Claude 3.5): coding, refactoring, complex logic (Primary for Antigravity & Claude)
    - Gemini 3.1 Pro: repository-wide analysis, search, multi-file context (Available for Antigravity)
-   - Fable 5: final audit, release validation, code-review (STRICTLY ONLY analyzes/reviews Claude's work)
    - Haiku: grep, summaries, classification
 8. Agent Assignment Rules: CLAUDE is the MAIN AGENT (Architect/Distributor). ANTIGRAVITY is the SECONDARY AGENT (Helper with access to Sonnet and Gemini, NO OPUS).
-9. CONTEXT BUDGET MANAGER: Assign tokens and adhere to STRICT thresholds: <20k (normal), 20-50k (capsule preferred), 50-100k (capsule only), >100k (mandatory compression). Opus (120k), Sonnet (80k), Gemini (200k), Fable (60k).
+9. CONTEXT BUDGET MANAGER: Assign tokens and adhere to STRICT thresholds: <20k (normal), 20-50k (capsule preferred), 50-100k (capsule only), >100k (mandatory compression). Opus 4.8 (120k), Sonnet (80k), Gemini (200k).
 10. STATE CAPSULES: Instead of passing chat logs or full files, pass a minimal structured JSON state capsule between agents.
     Schema: { "task": "", "classification": "", "files": [], "decision": "", "rootCause": "", "changes": [], "validation": {}, "openQuestions": [], "next": "" }
 11. STRICT ORCHESTRATOR USAGE: Use Memory, Logs, Locks, and Delegation.
@@ -186,10 +187,9 @@ function fallbackKeywordRoute(text: string, override?: Engine): Routing {
         instruction: `[DECENTRALIZED ROUTING]\nRead directive and manually create JSON sub-tasks in tasks/ folder.
 
 Model Routing Rules:
-- Opus: architecture, planning, security (ONLY FOR CLAUDE AGENT)
+- Opus 4.8 (ultracode, high reasoning effort, workflows enabled): architecture, planning, security, final audit, release validation, code-review (ONLY FOR CLAUDE AGENT)
 - Sonnet (Claude 3.5): coding, refactoring, complex logic (Primary for Antigravity & Claude)
 - Gemini 3.1 Pro: repository-wide analysis, search, multi-file context (Available for Antigravity)
-- Fable 5: final audit, release validation, code-review (STRICTLY ONLY analyzes/reviews Claude's work)
 - Haiku: grep, summaries, classification
 
 Context Budget Rules (Strict Thresholds):

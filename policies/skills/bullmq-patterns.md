@@ -1,33 +1,22 @@
 ---
 name: bullmq-patterns
-description: BullMQ queue/worker rules for this backend — retry/backoff config, persist-then-emit ordering, idempotency, concurrency, and the GPS persistence pipeline. Use when adding queues, processors, or background jobs under server/src/modules/.
+description: BullMQ queue/worker patterns. Use when adding queues, processors, or background jobs in server/src/modules/.
 ---
+HTTP thread never blocks on Postgres — async work goes through BullMQ workers.
 
-# BullMQ Patterns (Agent Ops Platform)
+Job options: `attempts:3`, exponential backoff. Set `removeOnComplete`/`removeOnFail` to prevent Redis growth. Tune `concurrency` per processor to DB connection capacity.
 
-Async work runs through BullMQ workers; the HTTP thread never blocks on Postgres.
+Persist-then-emit (critical): inside processor → write to Postgres → then emit WebSocket (throttled, org-scoped room). Never emit before commit. HTTP handler must not emit.
 
-## Job options
-- Retries: `attempts: 3` with **exponential backoff**.
-- Set sensible `removeOnComplete` / `removeOnFail` so Redis doesn't grow unbounded.
-- Tune `concurrency` per processor to the DB's capacity — don't let GPS ingest saturate connections.
+Idempotency: processors must be idempotent — jobs can retry. Use stable job id/dedupe key. Especially for `StockMovement` and GPS tracking points.
 
-## Persist-then-emit ordering (critical)
-Inside the processor: **write to Postgres → then emit the WebSocket event** (throttled, org-scoped room). Never emit before the commit. The HTTP handler must not emit.
-
-## Idempotency
-Jobs can retry — make processors idempotent. Use a stable job id / dedupe key so a re-run doesn't double-write (especially StockMovement and tracking points).
-
-## GPS persistence pipeline
+GPS pipeline:
 ```
-POST /tracking/batch (≤100 points)
-  → validate (Haversine, reject (0,0), >200km/h, future/old ts)
-  → Redis HASH write (sync, TTL 300s)   ← HTTP responds here
-  → BullMQ enqueue (attempts:3, exp backoff)
-  → worker persists to Postgres (PostGIS Point)
-  → emit WS AFTER write, throttled ~2s/agent, to org room
+POST /tracking/batch (≤100 pts)
+  → validate → Redis HASH (sync, TTL 300s) ← HTTP responds
+  → BullMQ enqueue → worker → PostGIS Point
+  → emit WS after write, throttled ~2s/agent, org room
 ```
 
-## General
-- Failures must be observable (logged with context, not swallowed). No `console.log` — use the app logger.
-- Queue/event-shape changes are architectural — flag for human approval.
+Failures: log with context via app logger. No `console.log`, no swallowed errors.
+Queue/event shape changes: flag for human approval before implementing.

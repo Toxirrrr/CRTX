@@ -114,7 +114,7 @@ export class BoardStore extends EventEmitter {
   }
 
   private async readAgents(tasks: BoardTask[]): Promise<AgentStatus[]> {
-    const candidates = ['claude', 'antigravity', 'fable'];
+    const candidates = ['claude', 'antigravity', 'opus'];
     const agents: AgentStatus[] = [];
 
     for (const name of candidates) {

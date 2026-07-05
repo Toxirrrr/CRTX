@@ -2,7 +2,7 @@ import { route } from '../orchestration/router';
 import * as path from 'path';
 import fsp from 'node:fs/promises';
 
-const CRTX_DIR = process.cwd();
+const CRTX_DIR = path.resolve(__dirname, '../../');
 const TASKS_DIR = path.resolve(CRTX_DIR, 'tasks');
 
 async function main() {

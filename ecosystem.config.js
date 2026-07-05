@@ -65,9 +65,9 @@ module.exports = {
       },
     },
     {
-      name: 'heartbeat:fable',
+      name: 'heartbeat:opus',
       script: 'dist/agents/heartbeat-client.js',
-      args: '--agent fable --capacity 1',
+      args: '--agent opus --capacity 1',
       cwd: __dirname,
       exec_mode: 'fork',
       instances: 1,

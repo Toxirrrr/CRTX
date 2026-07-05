@@ -25,10 +25,10 @@ async function runTests() {
 
   // Test 2: Runtime Health (offline agent fallback)
   console.log('Test 2: Runtime Health & Fallback Chain');
-  const tFable = await bus.submit({ sourceAgent: 'system', targetAgent: 'fable', payload: { title: 'Review' } });
-  // Since fable is offline in runtime_health.json, it should fallback to claude (or the first available in chain)
-  assert.strictEqual(tFable.targetAgent, 'claude');
-  console.log('  [PASS] Reassigned from offline fable to claude');
+  const tOpus = await bus.submit({ sourceAgent: 'system', targetAgent: 'opus', payload: { title: 'Review' } });
+  // Since opus is offline in runtime_health.json, it should fallback to claude (or the first available in chain)
+  assert.strictEqual(tOpus.targetAgent, 'claude');
+  console.log('  [PASS] Reassigned from offline opus to claude');
 
   // Test 3: Escalation Policy
   console.log('Test 3: Escalation Policy');
@@ -85,7 +85,7 @@ async function runTests() {
 
   // Test 9: Runtime Oscillation Fallback Counter
   console.log('Test 9: Runtime Oscillation');
-  const tOscillate = await bus.submit({ sourceAgent: 'system', targetAgent: 'fable', payload: { fallbackAttempts: 4 } });
+  const tOscillate = await bus.submit({ sourceAgent: 'system', targetAgent: 'opus', payload: { fallbackAttempts: 4 } });
   assert.strictEqual(tOscillate.status, 'PARKED');
   console.log('  [PASS] Infinite reassignment loop prevented by marking PARKED');
 

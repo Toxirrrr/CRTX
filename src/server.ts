@@ -18,11 +18,23 @@ import { ClaudeCodeAdapter } from './runtime/adapters/ClaudeCodeAdapter';
 import { AntigravityAdapter } from './runtime/adapters/AntigravityAdapter';
 import { NullAdapter } from './runtime/adapters/NullAdapter';
 
+// P0-P3 Integrations
+import { ASTParser } from './rag/ASTParser';
+import { FullKnowledgeGraph } from './rag/FullKnowledgeGraph';
+import { HybridSearch } from './rag/HybridSearch';
+import { FileQueueAdapter } from './orchestration/FileQueueAdapter';
+import { ContextAllocator } from './orchestration/ContextAllocator';
+import { ValidationPipeline } from './orchestration/Validator';
+import { RecoveryEngine } from './orchestration/RecoveryEngine';
+import { ExecutionEngine } from './orchestration/ExecutionEngine';
+import { TaskDAGEngine } from './orchestration/DAGEngine';
+import { LearningEngine } from './orchestration/LearningEngine';
+
 // Agents directory — single trusted path, prevents path traversal in heartbeat
 const AGENTS_DIR = path.resolve(__dirname, '..', 'agents');
 
 // Whitelist of valid agent names for the heartbeat endpoint
-const ALLOWED_AGENTS = new Set(['claude', 'antigravity', 'fable', 'human']);
+const ALLOWED_AGENTS = new Set(['claude', 'antigravity', 'opus', 'human']);
 
 // Optional API key for heartbeat (set ORCHESTRATOR_API_KEY in .env to enable)
 const API_KEY = process.env.ORCHESTRATOR_API_KEY ?? '';
@@ -53,6 +65,24 @@ const taskBus = new TaskBus();
 const memory = new MemoryStore();
 const board = new BoardStore();
 const inbox = new Inbox();
+
+// --- P0-P3 Engine Instantiation ---
+const astParser = new ASTParser();
+const knowledgeGraph = new FullKnowledgeGraph(astParser);
+const hybridSearch = new HybridSearch(memory, knowledgeGraph);
+
+const fileQueue = new FileQueueAdapter(path.resolve(__dirname, '..'));
+fileQueue.init().catch(console.error);
+
+const contextAllocator = new ContextAllocator(path.resolve(__dirname, '..', 'data', 'snapshots'));
+const validationPipeline = new ValidationPipeline(path.resolve(__dirname, '..'));
+const recoveryEngine = new RecoveryEngine(board, taskBus);
+const executionEngine = new ExecutionEngine(contextAllocator, validationPipeline, recoveryEngine);
+
+const learningEngine = new LearningEngine(path.resolve(__dirname, '..', 'data', 'learning'));
+learningEngine.init().catch(console.error);
+const dagEngine = new TaskDAGEngine();
+// ----------------------------------
 
 // Runtime Abstraction Layer
 const runtimeSelector = new RuntimeSelector();
@@ -201,6 +231,41 @@ app.post('/api/tasks', async (req: Request, res: Response) => {
   }
 });
 
+// P3: FileQueue (Zero-Dependency Distributed Runtime) Endpoint
+app.post('/api/queue/publish', async (req: Request, res: Response) => {
+  const { topic, payload } = req.body ?? {};
+  if (!topic || !payload || !payload.taskId || !payload.command) {
+    res.status(400).json({ error: 'topic and payload (with taskId, command) are required' });
+    return;
+  }
+  try {
+    const messageId = await fileQueue.publish(topic, payload);
+    res.status(201).json({ ok: true, messageId });
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+// P0: ExecutionEngine Endpoint (Run task with validation & auto-QA)
+app.post('/api/execute', async (req: Request, res: Response) => {
+  const { taskId, agentId, payload: reqPayload } = req.body ?? {};
+  if (!taskId || !agentId) {
+    res.status(400).json({ error: 'taskId and agentId are required' });
+    return;
+  }
+  try {
+    // Attempt to fetch payload from taskBus for Token Economy optimizations
+    const task = taskBus.get(taskId);
+    const payload = task ? task.payload : reqPayload;
+    
+    // P0: The Execution Engine handles Token Optimization, snapshotting, auto-QA, validation, and rollback
+    const result = await executionEngine.executeTask(taskId, agentId, payload);
+    res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
 // ── Board task read/update endpoints (file-based, for agent self-check) ───────
 //
 // F5 fix: agents MUST poll GET /api/board/tasks/:taskId during execution.
@@ -289,6 +354,16 @@ app.patch('/api/board/tasks/:taskId', async (req: Request, res: Response) => {
       void watchdog.cleanOrphanedLocks();
     }
 
+    // P1 & P2 Hooks: Task Completion
+    if (status === 'done') {
+      // Full Knowledge Graph AST Ingestion (assuming agent writes modified files to task payload or we scan)
+      // For a real integration, we would read the actual files modified by this task.
+      // Since board task doesn't currently track files, we can just ingest the task node.
+      try { 
+        knowledgeGraph.addNode({ id: taskId, type: 'task', metadata: { agent } }); 
+      } catch (e) { console.error('[Graph] Error:', e); }
+    }
+
     res.json({ ok: true, id: task.id, status: task.status, owner: task.owner });
   } catch {
     res.status(404).json({ error: 'task not found' });
@@ -297,7 +372,7 @@ app.patch('/api/board/tasks/:taskId', async (req: Request, res: Response) => {
 
 // ── Heartbeat endpoint ───────────────────────────────────────────────────────
 //
-// Agents (claude / antigravity / fable) call this to publish their liveness.
+// Agents (claude / antigravity / opus) call this to publish their liveness.
 // Guards:
 //   1. API key check (optional — skipped if ORCHESTRATOR_API_KEY is not set)
 //   2. Agent name whitelist — prevents path traversal and spoofing
@@ -417,7 +492,9 @@ app.get('/api/memory/search', async (req: Request, res: Response) => {
     res.status(400).json({ error: 'q is required' });
     return;
   }
-  const results = await memory.recall(query, topK);
+  const results = await hybridSearch.search(query, topK);
+  // Return the new hybrid result structure: { semanticResults, graphResults }
+  // Agents checking this endpoint will receive the enriched context automatically.
   res.json(results);
 });
 

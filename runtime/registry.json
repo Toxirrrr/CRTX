@@ -12,7 +12,7 @@
       "provider": "anthropic",
       "level": 2,
       "capabilities": ["coding", "security-review", "architecture", "review", "analysis"],
-      "models": ["claude-haiku-4-5", "claude-sonnet-4-6", "claude-opus-4-6", "claude-fable-5"]
+      "models": ["claude-haiku-4-5", "claude-sonnet-4-6", "claude-opus-4-6", "claude-opus-4-8"]
     },
     {
       "id": "antigravity",

@@ -260,7 +260,22 @@ export class Watchdog extends EventEmitter {
   private async atomicWrite(filePath: string, content: string): Promise<void> {
     const tmp = `${filePath}.tmp`;
     await fsp.writeFile(tmp, content, 'utf8');
-    await fsp.rename(tmp, filePath);
+    
+    let retries = 5;
+    while (retries > 0) {
+      try {
+        await fsp.rename(tmp, filePath);
+        return;
+      } catch (err: any) {
+        if ((err.code === 'EPERM' || err.code === 'EBUSY') && retries > 1) {
+          retries--;
+          await new Promise(res => setTimeout(res, 50));
+        } else {
+          try { await fsp.unlink(tmp); } catch {}
+          throw err;
+        }
+      }
+    }
   }
 
   // ─────────────────────────────────────────────────────────────────────────

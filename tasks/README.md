@@ -5,7 +5,7 @@ One JSON file per task: `<ID>.json` (copy `_TEMPLATE.json`).
 ## Fields
 - `id` — stable task ID (e.g. `F10` = Finding/Feature #10 from a
   roadmap/audit; pick any scheme, just keep it unique).
-- `owner` — `claude` | `antigravity` | `fable` | `human`.
+- `owner` — `claude` | `antigravity` | `opus` | `human`.
 - `status` — `pending` | `in_progress` | `blocked` | `review` | `done`.
 - `domain` — `SALES` | `LOGISTICS` | `INVENTORY` | `OPERATIONS` |
   `ADMINISTRATION` | `META` (optional, for routing).

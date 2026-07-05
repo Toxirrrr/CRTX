@@ -40,7 +40,7 @@ export class MemoryStore {
   async recall(query: string, topK = 5): Promise<MemoryItem[]> {
     await this.ready;
     const vector = await embed(query);
-    const results = await this.index.queryItems(vector, topK);
+    const results = await this.index.queryItems(vector, query, topK);
     return results.map((result) => ({
       id: result.item.id,
       text: String(result.item.metadata?.text ?? ''),

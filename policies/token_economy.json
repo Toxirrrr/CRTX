@@ -20,7 +20,7 @@
     "claude-haiku-4-5":  20000,
     "claude-sonnet-4-6": 80000,
     "claude-opus-4-6":   120000,
-    "claude-fable-5":    60000,
+    "claude-opus-4-8":   120000,
     "gemini-3.1-pro-high": 200000
   }
 }

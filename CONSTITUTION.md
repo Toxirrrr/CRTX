@@ -3,11 +3,13 @@
 > **Source of truth.** This file governs the entire CRTX runtime engine.
 > Knowledge Hierarchy:
 > 1. CRTX Constitution
-> 2. Decision Registry (`crtx/decisions/`)
-> 3. Skills (`crtx/policies/skills/`)
-> 4. Evidence (`crtx/evidence/`)
+> 2. Интерактивная Карта Проекта (`crtx/PROJECT_MAP.md` - где что находится)
+> 3. Project State & Context (`../docs/ai-context/PROJECT_STATE.md`)
+> 4. Decision Registry (`crtx/decisions/`)
+> 5. Skills (`crtx/policies/skills/`)
+> 6. Evidence (`crtx/evidence/`)
 > 
-> The Constitution overrules Decisions. Decisions overrule Skills. Skills overrule Evidence.
+> The Constitution overrules Project State. Project State overrules Decisions. Decisions overrule Skills. Skills overrule Evidence.
 
 ---
 
@@ -60,6 +62,166 @@ Do not mix these two layers.
 
 ---
 
+## CRTX INTEGRATION (MANDATORY ARCHITECTURE)
+
+LTCE НЕ является отдельным продуктом.
+LTCE является внутренней подсистемой CRTX.
+Однако LTCE НЕ является частью Core CRTX.
+LTCE представляет собой независимый Knowledge Engine, подключенный к CRTX через стабильный Public API.
+
+### Физическая структура
+
+LTCE располагается внутри репозитория CRTX.
+Пример:
+crtx/
+  core/
+    router/
+    planner/
+    agents/
+    tasks/
+    workflow/
+  ltce/
+    core/
+    parser/
+    resolver/
+    knowledge/
+    retriever/
+    planner/
+    storage/
+    cache/
+    snapshots/
+    metrics/
+    mcp/
+    plugins/
+    sdk/
+  integrations/
+    claude/
+    gemini/
+    openai/
+    qwen/
+
+### Логическая архитектура
+
+Физическое расположение внутри репозитория НЕ означает зависимость от Core CRTX.
+LTCE имеет:
+- собственную архитектуру
+- собственные интерфейсы
+- собственный жизненный цикл
+- собственный Execution Model
+- собственный Plugin SDK
+- собственный Storage Layer
+- собственные версии
+- собственную документацию
+- собственные тесты
+
+LTCE развивается независимо от Core CRTX.
+
+### Разделение ответственности
+
+CRTX отвечает исключительно за:
+- orchestration
+- workflows
+- routing
+- task execution
+- multi-agent coordination
+- scheduling
+
+LTCE отвечает исключительно за:
+- repository indexing
+- semantic analysis
+- knowledge fabric
+- graph management
+- retrieval
+- context planning
+- context generation
+- caching
+- snapshots
+- provenance
+- learning
+
+### Запрещенные зависимости
+
+CRTX НЕ имеет права обращаться напрямую к:
+- Repository
+- Filesystem
+- Knowledge Graph
+- Knowledge Fabric
+- Storage
+- Vector Store
+- Graph Storage
+- Embeddings
+- Snapshots
+- Cache
+
+Любой доступ к знаниям осуществляется только через LTCE Public API.
+
+Запрещено:
+CRTX -> Filesystem
+CRTX -> Repository
+CRTX -> Knowledge Graph
+CRTX -> Storage
+
+### Разрешенная схема
+
+Task -> CRTX Planner -> LTCE Context Request -> Prompt Planner -> Knowledge Fabric -> Hybrid Retriever -> Context Builder -> Context -> CRTX -> LLM
+
+### Source of Truth
+
+LTCE является единственным Source of Truth для знаний проекта.
+Все AI работают исключительно через LTCE.
+Никакие агенты не читают репозиторий напрямую.
+
+### LLM Independence
+
+LTCE полностью LLM-agnostic.
+Интерфейсы LTCE никогда не должны содержать Claude, Gemini, OpenAI, Qwen, Tree-sitter, PostgreSQL, Qdrant, Redis, BullMQ или любые другие реализации.
+Интерфейсы описывают только способности системы.
+Все конкретные технологии являются Plugin Providers.
+
+### Plugin-first Rule
+
+Любая технология должна заменяться без изменения Core LTCE.
+Parser, Resolver, Retriever, Embedding Provider, Storage Provider, Cache Provider, Planner, Metrics, Snapshot Provider, MCP Provider — все являются взаимозаменяемыми Plugin Providers.
+
+### Layer Isolation Rule
+
+Architecture Rule #1
+CRTX = Orchestration Layer
+LTCE = Knowledge Layer
+LLM = Execution Layer
+
+Ни один слой не имеет права обращаться к нижнему слою в обход публичных контрактов. Все взаимодействие осуществляется исключительно через Public API. Любое нарушение этого правила считается архитектурным дефектом.
+
+---
+
+## DOCUMENTATION ROADMAP (MANDATORY)
+
+Любые изменения LTCE должны соответствовать следующему порядку документов:
+
+01. CRTX_CONSTITUTION.md
+02. LTCE_ARCHITECTURE.md
+03. LTCE_EXECUTION_MODEL.md
+04. LTCE_INTERFACES.md
+05. LTCE_PROTOCOLS.md
+06. LTCE_STORAGE.md
+07. LTCE_TESTING.md
+08. LTCE_PLUGIN_SDK.md
+09. LTCE_DEVELOPER_GUIDE.md
+10. LTCE_IMPLEMENTATION_GUIDE.md
+
+Ни один последующий документ не имеет права противоречить предыдущему.
+Если обнаружено противоречие:
+- не изменять архитектуру самостоятельно;
+- остановиться;
+- описать конфликт;
+- предложить ADR;
+- дождаться утверждения.
+
+Architecture Freeze является обязательным.
+После его утверждения фундаментальная архитектура может изменяться только через ADR.
+
+---
+
 ## Governance
 
 You are the Master Orchestrator.
@@ -99,12 +261,12 @@ Use the lowest-cost model capable of completing the task safely.
 | Claude Sonnet 4.6 | **default implementation**: backend, frontend, CRUD, tests, refactoring |
 | Gemini 3.1 Pro High (via Antigravity) | repo-wide analysis, large context, doc synthesis |
 | Claude Opus 4.6 (via Antigravity) | orchestration, architecture, planning, security, critical decisions |
-| Claude Fable 5 | independent audits, release validation, production-readiness |
+| Claude Opus 4.8 (ultracode, high reasoning effort, workflows enabled) | independent audits, release validation, production-readiness |
 
-### Fable Communication Policy
+### Opus 4.8 Audit Communication Policy
 Minimal prompts. Provide only: objective, scope, affected files, expected output.
 
-Fable never receives:
+Opus 4.8 audit runs never receive:
 - raw repository dumps
 - complete audit history
 - complete review history
@@ -150,6 +312,8 @@ Context tiers:
 - Zero polite pleasantries
 - Zero filler words
 - Output ONLY dry facts, exact commands, and code
+- ALWAYS write in Russian (Всегда пиши на русском)
+- ALWAYS use Uzbekistan settings for data (Currency: UZS, Phone: +998, Location: Tashkent). No RUB, no USD.
 
 ---
 
@@ -204,7 +368,7 @@ Critical findings are fixed individually (never batched):
 
 ## Release Policy
 
-`code-reviewer → browser-validator → Opus review → Fable audit` → **`APPROVED FOR RELEASE`**
+`code-reviewer → browser-validator → Opus 4.8 audit (ultracode, high effort)` → **`APPROVED FOR RELEASE`**
 
 ---
 

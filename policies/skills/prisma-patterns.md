@@ -1,40 +1,30 @@
 ---
 name: prisma-patterns
-description: Prisma repository conventions for this backend — BaseRepository.scope, soft-delete, SELECT consts, paginated $transaction, delta-sync, and schema/model rules. Use when writing *.repository.ts, prisma/schema.prisma, or migrations.
+description: Prisma repository conventions — BaseRepository.scope, soft-delete, SELECT consts, pagination, schema rules. Use when editing *.repository.ts, schema.prisma, or migrations.
 ---
+`PrismaService` injected only in `*.repository.ts`. All repos extend `BaseRepository`.
 
-# Prisma Patterns (Agent Ops Platform)
+Tenant scoping (every query): `this.scope(organizationId)` adds `where:{organizationId}`. Throws if `organizationId` is falsy. SUPER_ADMIN is scoped too (D022). Cross-org access only via explicit `findAllAcrossOrgs()` + `role==='SUPER_ADMIN'` branch.
 
-`PrismaService` is injected **only** into `*.repository.ts`. Every repository extends `BaseRepository`.
+Soft-delete: reads filter `deletedAt:null`. Never hard-delete — set `deletedAt`.
+Delta-sync: `?updatedAfter=ISO8601` → omit `deletedAt` filter so clients see soft-deleted records.
 
-## Tenant scoping + soft-delete (every query)
-- Scope every query: `this.scope(organizationId)` (adds `where: { organizationId }`).
-  SUPER_ADMIN has a home `organizationId` too and is scoped like any other user (D022) —
-  `scope()`/`scopeActive()` now throw if `organizationId` is falsy. Cross-org access uses an
-  explicit `findAllAcrossOrgs()`-style method, never an empty/undefined scope.
-- Reads filter `deletedAt: null`. **Never hard-delete** — set `deletedAt`.
-- Delta-sync: list endpoints support `?updatedAfter=ISO8601`; when present, **omit** the `deletedAt` filter so clients see soft-deleted records.
+SELECT: define `const XXX_SELECT = {...} as const` at top of file. Never inline. Never return `passwordHash` or raw Prisma model.
 
-## SELECT discipline
-- Top-level `const XXX_SELECT = {...} as const` per repository. Never inline selects.
-- Never return raw Prisma models or `passwordHash`.
+Pagination: every list uses `$transaction([findMany, count])` — one round trip.
 
-## Pagination
-Every paginated list query uses `$transaction([findMany, count])` (one round trip).
-
-## Schema / model rules
-Every model:
+Schema rules for every model:
 ```prisma
-id            String    @id @default(cuid())
-organizationId String   @map("organization_id")
-createdAt     DateTime  @default(now()) @map("created_at")
-updatedAt     DateTime  @updatedAt @map("updated_at")
-deletedAt     DateTime? @map("deleted_at")
+id             String    @id @default(cuid())
+organizationId String    @map("organization_id")
+createdAt      DateTime  @default(now()) @map("created_at")
+updatedAt      DateTime  @updatedAt @map("updated_at")
+deletedAt      DateTime? @map("deleted_at")
 @@index([organizationId])
-@@map("plural_snake")
+@@map("plural_snake_case")
 ```
-- Models PascalCase, fields camelCase → `snake_case` columns via `@map`, tables `@@map("plural_snake")`.
-- Statuses are Prisma **enums** with transitions in services (state machines), not free strings.
-- Composite descending indexes for time-series: `@@index([agentId, recordedAt(sort: Desc)])` — index what you filter/sort on.
-- **PostGIS geometry columns are NOT in the schema** — add via raw SQL migrations (`geometry(Point, 4326)`), query with `$queryRaw` (`ST_Distance`, `ST_DWithin`).
-- `InventoryNode` is polymorphic: optional FKs `storeId? @unique`, `warehouseId? @unique`, `vehicleId? @unique` + `type` discriminator.
+Models: PascalCase. Fields: camelCase → `@map("snake_case")`. Tables: `@@map("plural_snake")`.
+Statuses: Prisma enums with transitions in services (state machines). Not free strings.
+Time-series indexes: `@@index([agentId, recordedAt(sort:Desc)])`.
+PostGIS geometry: NOT in schema — raw SQL migrations only (`geometry(Point,4326)`), queried with `$queryRaw`.
+`InventoryNode`: polymorphic — optional FKs `storeId?@unique`, `warehouseId?@unique`, `vehicleId?@unique` + `type` discriminator.

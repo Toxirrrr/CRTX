@@ -12,3 +12,31 @@ memory/*.json
 capsules/*.json
 capsules/*.md
 agents/*.status.json
+
+# User local data & reports
+data/
+logs/
+reports/
+memory/
+.memory-test/
+kickbacks.ai/
+ltce/
+*.txt
+*.csv
+runtime/*.json
+tasks/*.md
+!tasks/README.md
+decisions/
+FULL_MODULES_AUDIT.md
+PROJECT_MAP.md
+*.log
+
+# Scripts and non-production files
+generate_plan_tasks.js
+__pycache__/
+scripts/simulator*
+scripts/script.js
+scripts/api-audit.js
+scripts/list_pending_tasks.js
+tests/validation-sprint/
+docs/Platform-Stabilization-Plan.md 

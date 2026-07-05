@@ -1,34 +1,21 @@
 ---
 name: gps-tracking
-description: End-to-end GPS tracking pipeline rules for this backend — point validation, Redis-then-queue ingestion, PostGIS persistence, and throttled org-scoped emit. Use when editing server/src/modules/tracking/, the tracking gateway, or the gps-persist processor.
+description: End-to-end GPS tracking pipeline. Use when editing server/src/modules/tracking/, the tracking gateway, or the gps-persist BullMQ processor.
 ---
-
-# GPS Tracking Pipeline (Agent Ops Platform)
-
+Pipeline:
 ```
-Mobile POST /api/v1/tracking/batch (≤100 points)
-  → validate
-  → Redis HASH write (sync, TTL 300s)        ← HTTP responds here
+POST /api/v1/tracking/batch (≤100 points)
+  → validate → Redis HASH write (sync, TTL 300s) ← HTTP responds here
   → BullMQ enqueue (attempts:3, exp backoff)
-  → worker persists to Postgres (PostGIS Point)
+  → worker persists PostGIS Point (raw SQL)
   → emit WS AFTER write, throttled ~2s/agent, org room
-  → frontend useTrackingSocket → driverRegistry → MapLibre marker
+  → useTrackingSocket → driverRegistry → MapLibre marker
 ```
 
-## Validation (reject before ingest)
-- Haversine distance sanity check between consecutive points.
-- Reject `(0, 0)` coordinates.
-- Reject implied speed `> 200 km/h`.
-- Reject future timestamps and stale/too-old timestamps.
-- Batch cap: ≤100 points per request.
+Validation (reject before ingest): Haversine sanity check between consecutive points. Reject `(0,0)` coords. Reject implied speed >200km/h. Reject future timestamps and stale/old timestamps. Batch cap: ≤100 points.
 
-## Ingestion ordering
-- Write Redis HASH `agent:{id}:location` **synchronously**, TTL 300s (expiry = agent offline). HTTP responds after this write — **Postgres never blocks the request thread**.
-- Persistence is async via BullMQ (`attempts:3`, exponential backoff).
+Ingestion: Redis HASH write is synchronous — Postgres never blocks the HTTP thread. Persistence is async via BullMQ.
 
-## Persistence + emit
-- Worker writes a PostGIS `Point` (geometry via raw SQL, not Prisma schema).
-- **Emit only after the write succeeds**, throttled to ~1 emit per agent per ~2s, to the org-scoped tracking room — never global.
+Emit: only after Postgres write succeeds. Throttled ~1 emit/agent/~2s. To org-scoped tracking room only. Never global.
 
-## Map side
-Per-domain registries stay separate: `driverRegistry`, `salesAgentRegistry`, `storeRegistry`, `warehouseRegistry` — never merge.
+Registries: `driverRegistry` `salesAgentRegistry` `storeRegistry` `warehouseRegistry` — never merge.

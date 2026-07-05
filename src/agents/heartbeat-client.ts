@@ -26,7 +26,7 @@ export function startHeartbeat(AGENT: string, CAPACITY: number) {
   const INTERVAL   = 60000; // ms
   const API_KEY    = process.env.ORCHESTRATOR_API_KEY ?? '';
 
-  const ALLOWED = new Set(['claude', 'antigravity', 'fable']);
+  const ALLOWED = new Set(['claude', 'antigravity', 'opus']);
   if (!ALLOWED.has(AGENT)) {
     console.error(`[heartbeat] unknown agent "${AGENT}". Must be one of: ${[...ALLOWED].join(', ')}`);
     process.exit(1);
