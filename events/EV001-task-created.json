@@ -1,0 +1,10 @@
+{
+  "event_id": "EV001",
+  "timestamp": "2026-07-06T03:00:00+05:00",
+  "task_id": "T001-knowledge-engine",
+  "event_type": "TASK_CREATED",
+  "details": {
+    "initial_capability": "research",
+    "description": "Task injected into CRTX to build the Knowledge Engine for the PORTFOLIO workspace. Marks the beginning of the CRTX Dogfooding phase."
+  }
+}

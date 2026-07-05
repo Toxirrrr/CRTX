@@ -8,5 +8,6 @@ No implementation details are discussed here—only the purpose of each director
 - `sdk/` — Developer tools for interacting with the CRTX filesystem protocol programmatically.
 - `runtime/` — The capability router and engine that dispatches work to AI providers.
 - `memory/` — Storage adapters for capsules and architectural decision records (ADRs).
+- `events/` — The telemetry journal tracking task lifecycles (Created -> Research -> Evidence -> Capsule -> Review).
 - `examples/` — Self-contained scenarios demonstrating multi-agent handoffs and context recovery.
 - `docs/` — Core architectural documents, design principles, and guidelines.

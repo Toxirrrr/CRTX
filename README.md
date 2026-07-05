@@ -31,6 +31,7 @@ To coordinate this without losing context, CRTX relies on a structured filesyste
 - 📁 **`capsules/`**: Snapshot memory to pass context between agents without exploding token limits.
 - 📁 **`decisions/`**: Immutable Architecture Decision Records (ADRs).
 - 📁 **`skills/`**: Standard Operating Procedures for capabilities.
+- 📁 **`events/`**: The deterministic journal (timeline) of all state transitions and handoffs.
 
 ---
 
