@@ -5,7 +5,7 @@
 
 Every AI tool right now wants to own your entire workflow. They lock you into their IDE, tether you to their models, and constrain you within their context windows. 
 
-**Think of CRTX as Git for AI teams**—a shared, transparent protocol where human developers and AI systems synchronize their work.
+**CRTX brings Git-like workflows to AI engineering.** It is a shared, transparent protocol where human developers and AI systems synchronize their work.
 
 But building production-grade software isn't just about generating code faster in a chat box. **It's about coordination.**
 
@@ -19,11 +19,28 @@ Traditional orchestration frameworks try to fix this by building massive, opaque
 
 ### Capability-Based Routing
 
-```text
-Task  →  Capability  →  Runtime  →  Provider  →  Model
+Instead of sending a massive prompt to a single model and hoping for the best, CRTX evaluates the required *Capability* (e.g., "Architecture Review", "E2E Testing", "Frontend Implementation") and dynamically routes the work to the best available runtime on your machine. This enables parallel execution across multiple runtimes while preserving task isolation and coordination.
+
+```mermaid
+flowchart TD
+    A[Developer] --> B[Task]
+    B --> C[Capability Router]
+    C --> D[Runtime / Agent]
+    D --> E[Result]
+    E --> F[Evidence]
+    F --> G[Capsule]
 ```
 
-Instead of sending a massive prompt to a single model and hoping for the best, CRTX evaluates the required *Capability* (e.g., "Architecture Review", "E2E Testing", "Frontend Implementation") and dynamically routes the work to the best available runtime on your machine. This enables parallel execution across multiple runtimes while preserving task isolation and coordination.
+*(This architecture demonstrates how CRTX acts as a knowledge and lifecycle management system, not just a task router).*
+
+## CRTX vs. Traditional AI Workflows
+
+| Feature | CRTX | Traditional Chat Workflow |
+|---------|------|---------------------------|
+| **Persistent task state** | ✅ Filesystem-native | ❌ Lost when tab closes |
+| **Provider-neutral** | ✅ Agnostic | ⚠️ Tool-dependent |
+| **File-based coordination** | ✅ Universal protocol | ❌ Closed loop |
+| **Shared evidence & QA** | ✅ Cryptographic proofs | ⚠️ Limited by context window |
 
 ## The Software Factory
 
@@ -45,6 +62,14 @@ While other tools rely on a simple `config.json`, CRTX operates under a master `
 - **Release Gates & Validation Rules**
 - **Token Economy & Budgets**
 - **Escalation Protocols** (When the AI must stop and ask a human)
+
+## What CRTX is NOT
+
+To set expectations clearly, CRTX is an orchestrator and a protocol, but it is **not**:
+- **Not an autonomous AI agent:** It doesn't write code itself. It coordinates the agents that do.
+- **Not a replacement for IDE assistants:** You still use Cursor or Windsurf for standard coding. CRTX handles the macro-architecture and background tasks.
+- **Not a workflow automation platform:** It is specifically built for software engineering orchestration, not Zapier-style generic automation.
+- **Not a framework for building LLM applications:** It is not LangChain or LlamaIndex. It orchestrates engineering tools, not application logic.
 
 ## Who this is for
 
