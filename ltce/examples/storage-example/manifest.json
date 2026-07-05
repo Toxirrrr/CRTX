@@ -1,0 +1,9 @@
+{
+  "id": "storage-example",
+  "version": "1.0.0",
+  "ltceVersion": "1.0.0",
+  "author": "CRTX Team",
+  "type": "Worker",
+  "capabilities": [],
+  "permissions": ["Storage:Read", "Storage:Write"]
+}

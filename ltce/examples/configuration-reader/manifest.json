@@ -1,0 +1,9 @@
+{
+  "id": "configuration-reader",
+  "version": "1.0.0",
+  "ltceVersion": "1.0.0",
+  "author": "CRTX Team",
+  "type": "Worker",
+  "capabilities": [],
+  "permissions": []
+}

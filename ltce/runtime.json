@@ -1,0 +1,6 @@
+{
+  "sqlitePath": "data/runtime.db",
+  "pluginDirectory": "plugins",
+  "telemetryEnabled": true,
+  "logLevel": "info"
+}

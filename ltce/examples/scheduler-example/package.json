@@ -1,0 +1,8 @@
+{
+  "name": "scheduler-example",
+  "version": "1.0.0",
+  "main": "index.js",
+  "dependencies": {
+    "@crtx/sdk": "^1.0.1"
+  }
+}
