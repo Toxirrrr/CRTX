@@ -1,0 +1,29 @@
+{
+  "id": "T001",
+  "title": "Research GitHub Issues API pagination",
+  "status": "in_progress",
+  "capability": "implementation",
+  "priority": "normal",
+  "objective": "Investigate the GitHub REST API pagination model and document implementation recommendations.",
+  "expectedOutput": [
+    "API summary",
+    "Pagination strategy",
+    "Rate limit notes",
+    "Implementation recommendations"
+  ],
+  "history": [
+    {
+      "step": 1,
+      "capability": "research",
+      "status": "completed",
+      "output": "evidence/E001-api-research.md",
+      "capsule": "capsules/C001-api-summary.md"
+    },
+    {
+      "step": 2,
+      "capability": "implementation",
+      "status": "pending",
+      "input": "capsules/C001-api-summary.md"
+    }
+  ]
+}

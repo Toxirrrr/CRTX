@@ -18,9 +18,9 @@ flowchart TD
     F --> G[Task Done]
 ```
 
-## What this demonstrates:
-- A task is created in `tasks/`.
-- The first runtime produces cryptographic/structural `evidence/`.
-- The state is frozen into `capsules/`.
-- A second, completely different runtime resumes the task **without needing you to copy-paste context**.
-- The task is closed cleanly.
+## How to experience this:
+
+1. Open this folder in your AI IDE (Cursor, Windsurf, etc.).
+2. Ask your AI assistant:
+   > "Review the task in `tasks/T001-research-api.json` and continue the implementation."
+3. Notice that the assistant uses the `Capsule` and `Evidence` to write the code perfectly, without requiring you to paste any original conversation history.
