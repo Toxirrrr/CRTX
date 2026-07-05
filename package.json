@@ -16,7 +16,8 @@
     "test:orchestration": "ts-node tests/test_orchestration.ts",
     "test:token": "ts-node tests/test_token.ts",
     "test:stress": "ts-node tests/stress_tests.ts",
-    "postinstall": "node scripts/bootstrap.js"
+    "postinstall": "node scripts/bootstrap.js",
+    "demo": "node scripts/demo.js"
   },
   "dependencies": {
     "@xenova/transformers": "^2.0.1",

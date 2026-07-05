@@ -1,6 +1,13 @@
 <div align="center">
   <h1>CRTX</h1>
   <p><strong>A Provider-Neutral, Filesystem-Native Coordination Runtime for AI Teams</strong></p>
+  <p>
+    <a href="./QUICKSTART.md">Quick Start</a> •
+    <a href="./examples/README.md">Examples</a> •
+    <a href="./ROADMAP.md">Roadmap</a> •
+    <a href="./FAQ.md">FAQ</a> •
+    <a href="./CHANGELOG.md">Changelog</a>
+  </p>
 </div>
 
 Every AI tool right now wants to own your entire workflow. They lock you into their IDE, tether you to their models, and constrain you within their context windows. 
@@ -68,8 +75,8 @@ While other tools rely on a simple `config.json`, CRTX operates under a master `
 To set expectations clearly, CRTX is an orchestrator and a protocol, but it is **not**:
 - **Not an autonomous AI agent:** It doesn't write code itself. It coordinates the agents that do.
 - **Not a replacement for IDE assistants:** You still use Cursor or Windsurf for standard coding. CRTX handles the macro-architecture and background tasks.
-- **Not a workflow automation platform:** It is specifically built for software engineering orchestration, not Zapier-style generic automation.
-- **Not a framework for building LLM applications:** It is not LangChain or LlamaIndex. It orchestrates engineering tools, not application logic.
+
+*(For a deeper dive into why we didn't use LangGraph, GitHub Issues, or shared chats, read our **[FAQ: Why not...](./FAQ.md)**).*
 
 ## Who this is for
 
@@ -77,20 +84,11 @@ To set expectations clearly, CRTX is an orchestrator and a protocol, but it is *
 - **Staff Engineers** looking for rigorous review, QA, and release automation on every PR.
 - **Open-Source Builders** who refuse to be locked into a single vendor's ecosystem.
 
-## Quick Start
+## 🚀 Quick Start & Smoke Test
 
-CRTX is not an application you start or a server you host. It is a **protocol and project structure**. Any agent can plug in just by reading and writing files.
+Get CRTX up and running in your local environment in under 5 minutes. 
 
-**1. Initialize the Workspace**
-```bash
-git clone https://github.com/Toxirrrr/CRTX.git
-cd CRTX
-npm install
-```
-*Note: `npm install` automatically scaffolds the required directories (`tasks/`, `capsules/`, etc.) and detects available runtimes.*
-
-**2. Dispatch a Task**
-Simply create a JSON file in the `tasks/` directory describing what needs to be built. Your AI team (Claude, Cursor, etc.) will pick it up automatically.
+👉 **[Read the Quick Start Guide](./QUICKSTART.md)** to clone the repository, run the smoke tests, and experience the zero-context-loss workflow in your own IDE.
 
 ## For Agents
 
