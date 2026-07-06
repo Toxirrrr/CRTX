@@ -10,6 +10,8 @@ import { BoardStore } from './coordination/boardStore';
 import { EventBus } from './events/EventBus';
 import { TimelineSubscriber } from './events/subscribers/TimelineSubscriber';
 import { EventType } from './events/types';
+import { PluginManager } from './sdk/PluginManager';
+import { ExamplePlugin } from './plugins/ExamplePlugin';
 import { Inbox, DirectiveTarget } from './coordination/inbox';
 import { route, Engine } from './orchestration/router';
 import { Watchdog } from './orchestration/watchdog';
@@ -102,6 +104,11 @@ let previousTasks = new Map<string, any>();
 
 const eventBus = new EventBus();
 new TimelineSubscriber(eventBus);
+
+const pluginManager = new PluginManager(eventBus);
+pluginManager.register(new ExamplePlugin());
+pluginManager.initializeAll({ version: '1.0.0' }).catch(console.error);
+
 
 board.on('change', (snapshot) => {
   // Headless: board state changed
