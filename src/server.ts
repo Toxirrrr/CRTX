@@ -547,7 +547,7 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
 const PORT = Number(process.env.PORT ?? 4100);
 const server = app.listen(PORT, () => {
   // eslint-disable-next-line no-console
-  console.log(`Cortex (Headless) listening on http://localhost:${PORT}`);
+  console.log(`CRTX (Headless) listening on http://localhost:${PORT}`);
 
   // Embedded Runtime: Run listeners and heartbeats in the same process
   if (process.env.DISABLE_EMBEDDED_RUNTIME !== 'true') {
@@ -572,7 +572,7 @@ let isShuttingDown = false;
 function shutdown(signal: string) {
   if (isShuttingDown) return;
   isShuttingDown = true;
-  console.log(`\n[Graceful Shutdown] Received ${signal}. Stopping Cortex...`);
+  console.log(`\n[Graceful Shutdown] Received ${signal}. Stopping CRTX...`);
   
   // Stop background loops
   watchdog.stop();

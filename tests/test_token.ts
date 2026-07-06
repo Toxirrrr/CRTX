@@ -64,7 +64,7 @@ async function main() {
     assert('timestamps stripped from instruction', fpTime1 === fpTime2);
 
     // Record and lookup
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cortex-test-'));
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'crtx-test-'));
     // Use a temporary fingerprints.json for this test
     const origCwd = process.cwd();
     process.chdir(tmpDir);
@@ -86,7 +86,7 @@ async function main() {
   console.log('\nTest 2: DiffContext — slice extraction & 30% fallback');
   {
     // Create a temp file with 100 lines
-    const tmpFile = path.join(os.tmpdir(), `cortex-difftest-${Date.now()}.ts`);
+    const tmpFile = path.join(os.tmpdir(), `crtx-difftest-${Date.now()}.ts`);
     const lines   = Array.from({ length: 100 }, (_, i) => `const line${i + 1} = ${i + 1};`);
     fs.writeFileSync(tmpFile, lines.join('\n'), 'utf8');
 
@@ -121,7 +121,7 @@ async function main() {
   // ── Test 3: ResultCache ────────────────────────────────────────────────────
   console.log('\nTest 3: ResultCache — fingerprint+runtime+model key, TTL, CACHEABLE_CAPABILITIES');
   {
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cortex-cache-'));
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'crtx-cache-'));
     const origCwd = process.cwd();
     process.chdir(tmpDir);
     fs.mkdirSync(path.join('memory', 'cache'), { recursive: true });
@@ -210,7 +210,7 @@ async function main() {
   // ── Test 5: MemoryStore.recallLazy ────────────────────────────────────────
   console.log('\nTest 5: MemoryStore.recallLazy — remainingBudget threshold');
   {
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cortex-rag-'));
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'crtx-rag-'));
     const store  = new MemoryStore(path.join(tmpDir, 'idx'));
 
     await store.remember('auth module security vulnerability', { tag: 'test' });

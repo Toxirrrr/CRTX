@@ -9,7 +9,7 @@ async function main() {
   const [,, command, ...args] = process.argv;
 
   if (!command) {
-    console.error('Usage: cortex <submit|status|doctor|cleanup> [args]');
+    console.error('Usage: crtx <submit|status|doctor|cleanup> [args]');
     process.exit(1);
   }
 
@@ -34,7 +34,7 @@ async function main() {
 
 async function handleSubmit(filePath: string) {
   if (!filePath) {
-    console.error('Usage: cortex submit <path-to-task.json>');
+    console.error('Usage: crtx submit <path-to-task.json>');
     process.exit(1);
   }
 
@@ -56,7 +56,7 @@ async function handleSubmit(filePath: string) {
   // Pre-validate role client-side for immediate feedback
   const role = taskInput.payload?.role;
   if (role === 'general-purpose') {
-    console.warn('[CORTEX] WARNING: general-purpose role is heavily restricted. Submission may fail.');
+    console.warn('[CRTX] WARNING: general-purpose role is heavily restricted. Submission may fail.');
   }
 
   try {
@@ -93,7 +93,7 @@ async function handleStatus(taskId?: string) {
       }
       console.log(JSON.stringify(task, null, 2));
     } else {
-      console.log(`--- CORTEX Board Status ---`);
+      console.log(`--- CRTX Board Status ---`);
       console.log(`Total Tasks: ${tasks.length}`);
       const active = tasks.filter((t: any) => t.status === 'in_progress' || t.status === 'assigned');
       console.log(`Active: ${active.length}`);
@@ -106,7 +106,7 @@ async function handleStatus(taskId?: string) {
 }
 
 async function handleDoctor() {
-  console.log('🩺 Running CORTEX Doctor...');
+  console.log('🩺 Running CRTX Doctor...');
   // Force clean orphaned locks
   try {
     const res = await fetch(`${API_BASE}/locks/clean`, { method: 'POST' });
@@ -119,7 +119,7 @@ async function handleDoctor() {
 }
 
 async function handleCleanup() {
-  console.log('🧹 Running CORTEX Cleanup...');
+  console.log('🧹 Running CRTX Cleanup...');
   // This would archive completed tasks. Currently just logs.
   console.log('Note: Task archival is not yet implemented in the API. Board state is stable.');
 }
