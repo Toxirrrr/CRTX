@@ -7,7 +7,9 @@ import { TaskBus } from './orchestration/taskBus';
 import { HandshakeStatus } from './orchestration/types';
 import { MemoryStore } from './rag/memoryStore';
 import { BoardStore } from './coordination/boardStore';
-import { EventLogger } from './coordination/EventLogger';
+import { EventBus } from './events/EventBus';
+import { TimelineSubscriber } from './events/subscribers/TimelineSubscriber';
+import { EventType } from './events/types';
 import { Inbox, DirectiveTarget } from './coordination/inbox';
 import { route, Engine } from './orchestration/router';
 import { Watchdog } from './orchestration/watchdog';
@@ -98,6 +100,9 @@ taskBus.on('task', (task) => {
 let isInitialBoardLoad = true;
 let previousTasks = new Map<string, any>();
 
+const eventBus = new EventBus();
+new TimelineSubscriber(eventBus);
+
 board.on('change', (snapshot) => {
   // Headless: board state changed
   const currentTasks = new Map<string, any>();
@@ -106,9 +111,19 @@ board.on('change', (snapshot) => {
     if (!isInitialBoardLoad) {
       const prev = previousTasks.get(task.id);
       if (!prev) {
-        EventLogger.logEvent('task_created', { taskId: task.id, title: task.title, owner: task.owner });
+        eventBus.publish({
+          type: EventType.TASK_CREATED,
+          actor: 'system',
+          metadata: {},
+          payload: { taskId: task.id, title: task.title, owner: task.owner }
+        });
       } else if (prev.status !== task.status) {
-        EventLogger.logEvent('task_status_changed', { taskId: task.id, oldStatus: prev.status, newStatus: task.status });
+        eventBus.publish({
+          type: EventType.TASK_STATUS_CHANGED,
+          actor: 'system',
+          metadata: {},
+          payload: { taskId: task.id, oldStatus: prev.status, newStatus: task.status }
+        });
       }
     }
   }
