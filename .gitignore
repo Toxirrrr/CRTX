@@ -25,6 +25,7 @@ kickbacks.ai/
 runtime/*.json
 tasks/*.md
 !tasks/README.md
+events/
 
 FULL_MODULES_AUDIT.md
 PROJECT_MAP.md
