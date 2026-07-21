@@ -156,6 +156,19 @@ Cycle нельзя закрывать если:
 
 ---
 
+## PRODUCT VALUE GATE
+
+Перед реализацией каждой новой функции (до её добавления в Execution Plan) необходимо ответить на следующие вопросы:
+1. Какую проблему пользователя она решает?
+2. Какая роль пользователя получает ценность?
+3. Как пользователь работал ДО?
+4. Как будет работать ПОСЛЕ?
+5. Как измерить улучшение?
+
+Если чёткого ответа на эти вопросы нет — функция исключается из Execution Plan. Это правило защищает проект от разработки "технологий ради технологий" (AI ради AI) и смещает фокус на измеримую пользу для продукта.
+
+---
+
 ## FINAL REPORT
 
 После завершения выдать инженерный отчет в следующем формате:
@@ -555,3 +568,26 @@ Critical findings are fixed individually (never batched):
 
 The orchestrator coordinates. The specialists execute. The reviewers validate.
 Knowledge layer preserves context. Always minimize token usage, prevent duplicate work, and preserve architectural consistency.
+
+==================================================
+STABILIZATION FREEZE
+==================================================
+
+����� �����������:
+Build
+Typecheck
+Lint
+Unit
+Integration
+E2E
+
+����������� ��������� �������� ����������� ����.
+��������� ������:
+- ����������� �����;
+- ���������, ����������� ��� ����� �������;
+- security fixes;
+- performance fixes;
+- production fixes.
+
+����� ������� ������������� ����������� ������� ������ ���������� Engineering Cycle � ����� Execution Plan.
+
