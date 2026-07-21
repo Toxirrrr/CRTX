@@ -4,7 +4,7 @@ import path from 'node:path';
 import { EventEmitter } from 'node:events';
 
 const ROOT = path.join(__dirname, '..', '..');
-const TASKS_DIR = path.join(ROOT, 'tasks');
+const CYCLES_DIR = path.join(ROOT, 'cycles');
 const LOCKS_DIR = path.join(ROOT, 'locks');
 const AGENTS_DIR = path.join(ROOT, 'agents');
 
@@ -55,7 +55,7 @@ export class BoardStore extends EventEmitter {
   private debounce: NodeJS.Timeout | null = null;
 
   start(): void {
-    for (const dir of [TASKS_DIR, LOCKS_DIR, AGENTS_DIR]) {
+    for (const dir of [CYCLES_DIR, LOCKS_DIR, AGENTS_DIR]) {
       if (!fs.existsSync(dir)) continue;
       const watcher = fs.watch(dir, { recursive: false }, () => this.scheduleEmit());
       this.watchers.push(watcher);
@@ -84,13 +84,24 @@ export class BoardStore extends EventEmitter {
   }
 
   private async readTasks(): Promise<BoardTask[]> {
-    const files = await this.listFiles(TASKS_DIR, '.json');
+    const files = await this.listFiles(CYCLES_DIR, '.json');
     const tasks: BoardTask[] = [];
     for (const file of files) {
       if (file.startsWith('_')) continue; // skip _TEMPLATE.json
       try {
-        const raw = await fsp.readFile(path.join(TASKS_DIR, file), 'utf8');
-        tasks.push(JSON.parse(raw) as BoardTask);
+        const raw = await fsp.readFile(path.join(CYCLES_DIR, file), 'utf8');
+        const cycle = JSON.parse(raw); // This is a Cycle object
+        // Map Cycle to BoardTask format for dashboard/compat
+        tasks.push({
+          id: cycle.id,
+          title: cycle.objective,
+          owner: cycle.execution?.targetAgent || 'unassigned',
+          status: cycle.execution?.status?.toLowerCase() || 'pending',
+          domain: cycle.domain || 'META',
+          files: cycle.artifacts || [],
+          updatedAt: cycle.updatedAt,
+          notes: cycle.audit?.notes || ''
+        });
       } catch {
         // ignore malformed/partial writes — next change event re-reads
       }
@@ -150,7 +161,7 @@ export class BoardStore extends EventEmitter {
       const defaultCapacity = hasMd ? 1         : 0;
 
       const activeTasks = tasks.filter(
-        (t) => t.owner === name && (t.status === 'in_progress' || t.status === 'assigned'),
+        (t) => t.owner === name && (['in_progress', 'assigned', 'running', 'initializing', 'validating', 'qa_review'].includes(t.status)),
       ).length;
 
       agents.push({

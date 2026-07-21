@@ -24,36 +24,21 @@ async function main() {
     console.log(`Context: ${routingInfo.contextBudget ?? 'auto'}\n`);
     console.log(`Analysis:\n${routingInfo.analysis}\n`);
 
-    if (routingInfo.subTasks && routingInfo.subTasks.length > 0) {
-      console.log(`[CRTX Router] Generating ${routingInfo.subTasks.length} sub-tasks...\n`);
+    if (routingInfo.cycles && routingInfo.cycles.length > 0) {
+      console.log(`[CRTX Router] Generating ${routingInfo.cycles.length} Engineering Cycles...\n`);
       
-      await fsp.mkdir(TASKS_DIR, { recursive: true });
+      const CYCLES_DIR = path.resolve(CRTX_DIR, 'cycles');
+      await fsp.mkdir(CYCLES_DIR, { recursive: true });
       
-      for (const [index, subTask] of routingInfo.subTasks.entries()) {
-        const taskId = `task-${Date.now()}-${index}`;
-        const taskFile = path.join(TASKS_DIR, `${taskId}.json`);
+      for (const [index, cycle] of routingInfo.cycles.entries()) {
+        const cycleFile = path.join(CYCLES_DIR, `${cycle.id}.json`);
         
-        const taskObj = {
-          id: taskId,
-          title: subTask.title,
-          owner: subTask.agent,
-          reviewer: subTask.reviewer,
-          status: 'pending',
-          instruction: subTask.instruction,
-          contextBudget: subTask.contextBudget,
-          dependsOn: subTask.dependsOn ?? [],
-          stateCapsule: subTask.stateCapsule ?? {},
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          notes: ''
-        };
-        
-        await fsp.writeFile(taskFile, JSON.stringify(taskObj, null, 2) + '\n', 'utf8');
-        console.log(`  -> Created ${taskId}.json (Owner: ${subTask.agent})`);
+        await fsp.writeFile(cycleFile, JSON.stringify(cycle, null, 2) + '\n', 'utf8');
+        console.log(`  -> Created ${cycle.id}.json (Owner: ${cycle.execution.targetAgent})`);
       }
-      console.log('\n[CRTX Router] Success. Tasks are queued for listeners.');
+      console.log('\n[CRTX Router] Success. Cycles are queued for Autonomous Engineering.');
     } else {
-      console.log('[CRTX Router] No sub-tasks generated.');
+      console.log('[CRTX Router] No cycles generated.');
     }
   } catch (err) {
     console.error('[CRTX Router] Fatal Error:', err);

@@ -6,7 +6,7 @@ import path from 'node:path';
  */
 interface GraphNode {
   id: string;
-  type: 'file' | 'module' | 'task';
+  type: 'file' | 'module' | 'cycle';
 }
 
 /**
@@ -24,7 +24,7 @@ export class MiniKnowledgeGraph implements IMiniKnowledgeGraph {
   /**
    * Helper to add a node safely
    */
-  private addNode(id: string, type: 'file' | 'module' | 'task') {
+  private addNode(id: string, type: 'file' | 'module' | 'cycle') {
     if (!this.nodes.has(id)) {
       this.nodes.set(id, { id, type });
     }
@@ -41,44 +41,45 @@ export class MiniKnowledgeGraph implements IMiniKnowledgeGraph {
   }
 
   /**
-   * Called whenever a task modifies a file.
+   * Called whenever a Cycle modifies a file.
    * Auto-infers the module from the file path.
+   * @param cycleId - The Cycle ID (formerly taskId — legacy callers still work via IMiniKnowledgeGraph)
    */
-  recordTaskFileModification(taskId: string, filePath: string): void {
-    // 1. Add Task Node
-    this.addNode(taskId, 'task');
+  recordTaskFileModification(cycleId: string, filePath: string): void {
+    // 1. Add Cycle Node
+    this.addNode(cycleId, 'cycle');
 
     // 2. Add File Node
     this.addNode(filePath, 'file');
-    this.addEdge(taskId, filePath); // TASK MODIFIES FILE
+    this.addEdge(cycleId, filePath); // CYCLE MODIFIES FILE
 
     // 3. Infer Module Node (e.g. src/modules/auth/... -> auth)
     const segments = filePath.split(path.sep).join('/').split('/');
     const modulesIndex = segments.indexOf('modules');
-    
+
     if (modulesIndex !== -1 && modulesIndex + 1 < segments.length) {
       const moduleName = segments[modulesIndex + 1];
       this.addNode(moduleName, 'module');
       this.addEdge(moduleName, filePath); // MODULE CONTAINS FILE
-      this.addEdge(taskId, moduleName);   // TASK AFFECTS MODULE
+      this.addEdge(cycleId, moduleName);  // CYCLE AFFECTS MODULE
     }
   }
 
   /**
-   * Given a task ID, returns all modules it affects based on recorded files.
-   * Used by DAG or routing to prevent concurrent execution on the same module.
+   * Given a Cycle ID, returns all modules it affects.
+   * @param cycleId - The Cycle ID (formerly taskId)
    */
-  getModuleDependencies(taskId: string): string[] {
+  getModuleDependencies(cycleId: string): string[] {
     const modules: string[] = [];
-    const targets = this.edges.get(taskId) || new Set();
-    
+    const targets = this.edges.get(cycleId) || new Set();
+
     for (const targetId of targets) {
       const node = this.nodes.get(targetId);
       if (node && node.type === 'module') {
         modules.push(node.id);
       }
     }
-    
+
     return modules;
   }
 }

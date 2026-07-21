@@ -13,7 +13,8 @@ import { EventType } from './events/types';
 import { PluginManager } from './sdk/PluginManager';
 import { ExamplePlugin } from './plugins/ExamplePlugin';
 import { Inbox, DirectiveTarget } from './coordination/inbox';
-import { route, Engine } from './orchestration/router';
+import { Engine } from './orchestration/router';
+import { route } from './orchestration/RouterFacade';
 import { Watchdog } from './orchestration/watchdog';
 import { NotificationService } from './notifications/notificationService';
 import { startListener } from './agents/listen-for-work';
@@ -34,6 +35,8 @@ import { RecoveryEngine } from './orchestration/RecoveryEngine';
 import { ExecutionEngine } from './orchestration/ExecutionEngine';
 import { TaskDAGEngine } from './orchestration/DAGEngine';
 import { LearningEngine } from './orchestration/LearningEngine';
+import * as CycleFactory from './orchestration/CycleFactory';
+import { Cycle } from './orchestration/types';
 
 // Agents directory — single trusted path, prevents path traversal in heartbeat
 const AGENTS_DIR = path.resolve(__dirname, '..', 'agents');
@@ -257,6 +260,90 @@ app.post('/api/directive', async (req: Request, res: Response) => {
   res.status(201).json(result);
 });
 
+// ── Cycle endpoints (CRTX Runtime) ───────────────────────────────────────────
+// NOTE: These are Cycle-native endpoints for the new runtime.
+// Legacy /api/tasks endpoints remain unchanged for backward compatibility.
+
+const CYCLES_DIR = path.resolve(__dirname, '..', 'cycles');
+
+/** Create a new Cycle in the runtime (written to cycles/*.json) */
+app.post('/api/cycles', async (req: Request, res: Response) => {
+  const { missionId, objective, sourceAgent, targetAgent, risk, scope, budget, payload } = req.body ?? {};
+  if (!objective || typeof objective !== 'string') {
+    res.status(400).json({ error: 'objective is required' });
+    return;
+  }
+  if (!sourceAgent || !targetAgent) {
+    res.status(400).json({ error: 'sourceAgent and targetAgent are required' });
+    return;
+  }
+
+  try {
+    import('node:fs/promises').then(async (fspModule) => {
+      const cycle = CycleFactory.create({
+        missionId: missionId ?? 'default-mission',
+        objective,
+        sourceAgent,
+        targetAgent,
+        risk,
+        scope,
+        budget,
+        payload,
+      });
+      await fspModule.mkdir(CYCLES_DIR, { recursive: true });
+      await fspModule.writeFile(
+        path.join(CYCLES_DIR, `${cycle.id}.json`),
+        JSON.stringify(cycle, null, 2) + '\n',
+        'utf8'
+      );
+      res.status(201).json(cycle);
+    }).catch(err => res.status(500).json({ error: (err as Error).message }));
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+/** List all cycles from cycles/*.json */
+app.get('/api/cycles', async (_req: Request, res: Response) => {
+  try {
+    const { promises: fspModule } = await import('node:fs');
+    const files = (await fspModule.readdir(CYCLES_DIR)).filter(f => f.endsWith('.json') && !f.startsWith('_'));
+    const cycles: Cycle[] = [];
+    for (const file of files) {
+      try {
+        const raw = await fspModule.readFile(path.join(CYCLES_DIR, file), 'utf8');
+        const result = CycleFactory.parse(JSON.parse(raw));
+        if (result.ok) cycles.push(result.cycle);
+      } catch { /* skip malformed */ }
+    }
+    res.json(cycles);
+  } catch {
+    res.json([]);
+  }
+});
+
+/** Get a single cycle by ID */
+app.get('/api/cycles/:cycleId', async (req: Request, res: Response) => {
+  const cycleId = String(req.params.cycleId);
+  if (!/^[A-Za-z0-9_-]+$/.test(cycleId)) {
+    res.status(400).json({ error: 'invalid cycleId' });
+    return;
+  }
+  try {
+    const { promises: fspModule } = await import('node:fs');
+    const raw = await fspModule.readFile(path.join(CYCLES_DIR, `${cycleId}.json`), 'utf8');
+    const result = CycleFactory.parse(JSON.parse(raw));
+    if (result.ok) {
+      res.json(result.cycle);
+    } else {
+      res.status(422).json({ error: 'cycle data is malformed', details: result.errors });
+    }
+  } catch {
+    res.status(404).json({ error: 'cycle not found' });
+  }
+});
+
+
 app.post('/api/tasks', async (req: Request, res: Response) => {
   const { sourceAgent, targetAgent, taskId, status, payload } = req.body ?? {};
   if (!sourceAgent || !targetAgent || !payload) {
@@ -315,7 +402,7 @@ app.post('/api/execute', async (req: Request, res: Response) => {
 // Agents update their own task via PATCH /api/board/tasks/:taskId
 // (e.g. to move from 'assigned' → 'in_progress' → 'done').
 
-const BOARD_TASKS_DIR = path.resolve(__dirname, '..', 'tasks');
+const BOARD_CYCLES_DIR = path.resolve(__dirname, '..', 'cycles');
 const VALID_TASK_STATUSES = new Set(['pending','assigned','in_progress','review','done','blocked','cancelled']);
 
 /** Read a single board task by ID (file-based). Used by agents to check revocation. */
@@ -326,7 +413,7 @@ app.get('/api/board/tasks/:taskId', async (req: Request, res: Response) => {
     res.status(400).json({ error: 'invalid taskId' });
     return;
   }
-  const file = path.join(BOARD_TASKS_DIR, `${taskId}.json`);
+  const file = path.join(BOARD_CYCLES_DIR, `${taskId}.json`);
   try {
     const raw = await fsp.readFile(file, 'utf8');
     const task = JSON.parse(raw);
@@ -369,7 +456,7 @@ app.patch('/api/board/tasks/:taskId', async (req: Request, res: Response) => {
     return;
   }
 
-  const file = path.join(BOARD_TASKS_DIR, `${taskId}.json`);
+  const file = path.join(BOARD_CYCLES_DIR, `${taskId}.json`);
   try {
     const raw = await fsp.readFile(file, 'utf8');
     const task = JSON.parse(raw);
@@ -400,7 +487,7 @@ app.patch('/api/board/tasks/:taskId', async (req: Request, res: Response) => {
       // For a real integration, we would read the actual files modified by this task.
       // Since board task doesn't currently track files, we can just ingest the task node.
       try { 
-        knowledgeGraph.addNode({ id: taskId, type: 'task', metadata: { agent } }); 
+        knowledgeGraph.addNode({ id: taskId, type: 'cycle', metadata: { agent } }); 
       } catch (e) { console.error('[Graph] Error:', e); }
     }
 

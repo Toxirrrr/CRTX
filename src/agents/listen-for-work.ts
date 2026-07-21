@@ -2,15 +2,15 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const ROOT = path.join(__dirname, '..', '..');
-const TASKS_DIR = path.join(ROOT, 'tasks');
+const CYCLES_DIR = path.join(ROOT, 'cycles');
 const AGENTS_DIR = path.join(ROOT, 'agents');
 
 export function startListener(agent: string) {
-  console.log(`[Event-Driven] ${agent} is listening for tasks (with Work Stealing)...`);
+  console.log(`[Event-Driven] ${agent} is listening for cycles (with Work Stealing)...`);
 
   let isProcessing = false;
 
-  function checkTasks() {
+  function checkCycles() {
   if (isProcessing) return;
   isProcessing = true;
 
@@ -33,21 +33,24 @@ export function startListener(agent: string) {
     }
     if (!stats[agent]) stats[agent] = { capacity: 2, active: 0, lastSeen: Date.now() };
 
-    // 2. Scan tasks to calculate active counts and find pending tasks
-    const files = fs.readdirSync(TASKS_DIR).filter(f => f.endsWith('.json') && !f.startsWith('_'));
-    const pendingTasks: { file: string, owner: string }[] = [];
+    // 2. Scan cycles to calculate active counts and find pending cycles
+    if (!fs.existsSync(CYCLES_DIR)) {
+        fs.mkdirSync(CYCLES_DIR, { recursive: true });
+    }
+    const files = fs.readdirSync(CYCLES_DIR).filter(f => f.endsWith('.json') && !f.startsWith('_'));
+    const pendingCycles: { file: string, owner: string }[] = [];
 
     for (const file of files) {
       try {
-        const raw = fs.readFileSync(path.join(TASKS_DIR, file), 'utf8');
-        const task = JSON.parse(raw);
+        const raw = fs.readFileSync(path.join(CYCLES_DIR, file), 'utf8');
+        const cycle = JSON.parse(raw);
 
-        if (task.status === 'in_progress' || task.status === 'review' || task.status === 'assigned') {
-          if (task.owner && stats[task.owner]) {
-            stats[task.owner].active++;
+        if (cycle.status === 'in_progress' || cycle.status === 'review' || cycle.status === 'assigned') {
+          if (cycle.owner && stats[cycle.owner]) {
+            stats[cycle.owner].active++;
           }
-        } else if (task.status === 'pending') {
-          pendingTasks.push({ file, owner: task.owner || '' });
+        } else if (cycle.status === 'pending') {
+          pendingCycles.push({ file, owner: cycle.owner || '' });
         }
       } catch { /* ignore partial read */ }
     }
@@ -56,15 +59,15 @@ export function startListener(agent: string) {
     
     // 3. Apply limit & Work Stealing logic
     if (myStats.active < myStats.capacity) {
-      // Primary: Look for my own pending tasks
-      let target = pendingTasks.find(t => t.owner === agent);
+      // Primary: Look for my own pending cycles
+      let target = pendingCycles.find(t => t.owner === agent);
       
-      // Fallback (Work Stealing): Look for tasks of OTHER agents who are FULL, or unowned tasks
+      // Fallback (Work Stealing): Look for cycles of OTHER agents who are FULL, or unowned cycles
       let isSteal = false;
       if (!target) {
         const now = Date.now();
-        target = pendingTasks.find(t => {
-          if (!t.owner) return true; // Unowned task, grab it
+        target = pendingCycles.find(t => {
+          if (!t.owner) return true; // Unowned cycle, grab it
           const ownerStats = stats[t.owner];
           if (!ownerStats) return true;
           
@@ -80,22 +83,22 @@ export function startListener(agent: string) {
       }
 
       if (target) {
-        console.log(`\n🔔 WAKE UP! TASK READY: ${target.file}`);
+        console.log(`\n🔔 WAKE UP! ENGINEERING CYCLE READY: ${target.file}`);
         console.log(`My Capacity: ${myStats.active}/${myStats.capacity}`);
         if (isSteal) {
           console.log(`[Work Stealing] Original owner '${target.owner}' is full (or empty). You are taking over!`);
         }
         
-        // Auto-claim the task to stop the PM2 infinite loop
+        // Auto-claim the cycle to stop the PM2 infinite loop
         try {
-          const targetPath = path.join(TASKS_DIR, target.file);
-          const rawTask = fs.readFileSync(targetPath, 'utf8');
-          const taskObj = JSON.parse(rawTask);
-          taskObj.owner = agent;
-          taskObj.status = 'assigned';
-          taskObj.updatedAt = new Date().toISOString();
-          fs.writeFileSync(targetPath, JSON.stringify(taskObj, null, 2), 'utf8');
-          console.log(`[Auto-Claim] Set tasks/${target.file} owner="${agent}" and status="assigned"`);
+          const targetPath = path.join(CYCLES_DIR, target.file);
+          const rawCycle = fs.readFileSync(targetPath, 'utf8');
+          const cycleObj = JSON.parse(rawCycle);
+          cycleObj.owner = agent;
+          cycleObj.status = 'assigned';
+          cycleObj.updatedAt = new Date().toISOString();
+          fs.writeFileSync(targetPath, JSON.stringify(cycleObj, null, 2), 'utf8');
+          console.log(`[Auto-Claim] Set cycles/${target.file} owner="${agent}" and status="assigned"`);
         } catch (e) {
           console.error(`[Error] Failed to auto-claim ${target.file}`, e);
         }
@@ -109,12 +112,12 @@ export function startListener(agent: string) {
 }
 
   // Check initially
-  checkTasks();
+  checkCycles();
 
-  // Check on any file change in tasks/
-  fs.watch(TASKS_DIR, (eventType, filename) => {
+  // Check on any file change in cycles/
+  fs.watch(CYCLES_DIR, (eventType, filename) => {
     if (filename && filename.endsWith('.json')) {
-      checkTasks();
+      checkCycles();
     }
   });
 }

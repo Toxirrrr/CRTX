@@ -29,8 +29,18 @@ export class ExecutionEngine implements IExecutionEngine {
     this.resultCache = resultCache || new ResultCache();
   }
 
-  async executeTask(taskId: string, agentId: string, payload?: any): Promise<ExecutionResult> {
+  /**
+   * Execute a Cycle (or legacy task for backward compat).
+   * @param cycleId - The Cycle ID (new runtime). Also accepted as taskId for legacy callers.
+   * @param agentId - The agent executing this cycle.
+   * @param payload - Optional payload override.
+   */
+  async executeTask(cycleId: string, agentId: string, payload?: any): Promise<ExecutionResult> {
+    // Alias: cycleId and taskId are interchangeable during migration.
+    // TODO(migration): Rename parameter to cycleId after full migration.
+    const taskId = cycleId;
     const executionId = `exec-${taskId}-${Date.now()}`;
+
     const ctx: ExecutionContext = {
       executionId,
       taskId,

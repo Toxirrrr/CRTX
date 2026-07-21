@@ -1,6 +1,10 @@
 import axios from 'axios';
 import * as fs from 'fs';
 import * as path from 'path';
+import { Cycle } from './types';
+import * as CycleFactory from './CycleFactory';
+// NOTE: LegacyImporter/LegacyExporter MUST NOT be imported here — router is Cycle-pure.
+export type { Cycle };
 
 /**
  * CRTX Capability Injection
@@ -46,6 +50,7 @@ function getCapabilitiesText(): string {
 }
 
 // CRTX: Engine type — capability-based routing. Never hardcode a specific provider.
+
 export type Engine = 'claude' | 'antigravity' | 'cursor' | 'windsurf' | 'codex-cli' | 'cline' | 'aider' | 'opencode';
 export type Risk = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 export type Domain = 'SALES' | 'LOGISTICS' | 'INVENTORY' | 'OPERATIONS' | 'ADMINISTRATION' | 'META';
@@ -57,9 +62,9 @@ export interface Routing {
   model: string;
   risk: Risk;
   rationale: string;
-  analysis: string; // "Analyze task to find the optimal variant"
+  analysis: string;
   contextBudget?: number;
-  subTasks?: { title: string; agent: string; reviewer?: string; instruction: string; contextBudget?: number; dependsOn?: string[]; stateCapsule?: any }[];
+  cycles?: Cycle[];
 }
 
 // Check for API keys
@@ -91,34 +96,54 @@ export async function route(text: string, override?: Engine): Promise<Routing> {
 }
 
 const SYSTEM_PROMPT = `
-You are the Master Orchestrator (Meta-Planner).
-1. Analyze the user's directive deeply and provide the MOST OPTIMAL approach in the "analysis" field.
-2. Break it into concrete "subTasks". Populate the 'dependsOn' array for sequential dependencies.
-3. For HIGH/CRITICAL risk tasks, you MUST assign a "reviewer" (e.g. "code-reviewer" or "claude" running Opus 4.8) to enforce Pair Programming.
-7. Model Selection Rules:
-   - Opus 4.8 (ultracode, high reasoning effort, workflows enabled): architecture, planning, security, final audit, release validation, code-review (ONLY FOR CLAUDE AGENT. DO NOT assign Opus to Antigravity)
-   - Sonnet (Claude 3.5): coding, refactoring, complex logic (Primary for Antigravity & Claude)
+You are the Master Orchestrator (Meta-Planner) for CRTX Autonomous Cycle Engineering v1.
+1. Analyze the user's directive deeply and define a single comprehensive Engineering Cycle.
+2. An Engineering Cycle is a fully autonomous mission that goes from Planning to Final Audit.
+3. Define the Cycle's goal, scope, and initial internal plan.
+4. Model Selection Rules:
+   - Opus 4.8 (ultracode, high reasoning effort): architecture, planning, security, final audit, release validation (ONLY FOR CLAUDE AGENT)
+   - Sonnet (Claude 3.5): coding, refactoring, complex logic (Primary)
    - Gemini 3.1 Pro: repository-wide analysis, search, multi-file context (Available for Antigravity)
    - Haiku: grep, summaries, classification
-8. Agent Assignment Rules: CLAUDE is the MAIN AGENT (Architect/Distributor). ANTIGRAVITY is the SECONDARY AGENT (Helper with access to Sonnet and Gemini, NO OPUS).
-9. CONTEXT BUDGET MANAGER: Assign tokens and adhere to STRICT thresholds: <20k (normal), 20-50k (capsule preferred), 50-100k (capsule only), >100k (mandatory compression). Opus 4.8 (120k), Sonnet (80k), Gemini (200k).
-10. STATE CAPSULES: Instead of passing chat logs or full files, pass a minimal structured JSON state capsule between agents.
-    Schema: { "task": "", "classification": "", "files": [], "decision": "", "rootCause": "", "changes": [], "validation": {}, "openQuestions": [], "next": "" }
-11. STRICT ORCHESTRATOR USAGE: Use Memory, Logs, Locks, and Delegation.
-12. RELEASE GATE: Before closing a task, ensure Build, Lint, Tests, Review, and Security pass. If red, task != done.
+5. Agent Assignment Rules: CLAUDE is the MAIN AGENT (Autonomous Senior Principal Engineer). ANTIGRAVITY is the SECONDARY AGENT.
+6. CONTEXT BUDGET MANAGER: Assign tokens and adhere to STRICT thresholds: <20k (normal), 20-50k (capsule preferred), 50-100k (capsule only), >100k (mandatory compression).
+7. CYCLE PHASES (Must be executed autonomously by the assigned agent):
+   - Phase 1: Repository Audit
+   - Phase 2: Execution Plan
+   - Phase 3: Implementation
+   - Phase 4: Verification (build, lint, tests)
+   - Phase 5: Optimization
+   - Phase 6: Final Audit
 
 Respond ONLY in valid JSON format:
 {
   "domain": "OPERATIONS",
-  "agent": "planner",
+  "agent": "claude",
   "engine": "claude",
   "model": "sonnet",
   "risk": "HIGH",
   "contextBudget": 120000,
   "rationale": "Why this routing...",
   "analysis": "Optimal variant is to...",
-  "subTasks": [
-    { "title": "...", "agent": "backend-engineer", "reviewer": "code-reviewer", "instruction": "...", "contextBudget": 80000, "dependsOn": ["ID-PREVIOUS"], "stateCapsule": { "task": "ID", "status": "pending", "files": [], "decision": "", "next": "" } }
+  "cycles": [
+    { 
+      "id": "generated-cycle-id",
+      "missionId": "generated-mission-id",
+      "objective": "Full context and instructions for the cycle...",
+      "scope": { "include": [], "exclude": [] },
+      "budget": { "maxHours": 1, "maxFiles": 50, "maxModules": 1 },
+      "constraints": [],
+      "risk": "HIGH",
+      "definitionOfDone": [],
+      "qualityGates": [],
+      "execution": { "status": "PENDING", "sourceAgent": "orchestrator", "targetAgent": "claude", "payload": { "stateCapsule": {} } },
+      "evidence": [],
+      "artifacts": [],
+      "audit": {},
+      "releaseDecision": "PENDING",
+      "createdAt": "2026-07-07T00:00:00Z",
+      "updatedAt": "2026-07-07T00:00:00Z"
+    }
   ]
 }
 `;
@@ -162,10 +187,52 @@ function parseAIResponse(jsonStr: string): Routing {
   try {
     const start = jsonStr.indexOf('{');
     const end = jsonStr.lastIndexOf('}') + 1;
-    const cleanJson = jsonStr.slice(start, end);
-    return JSON.parse(cleanJson) as Routing;
+    const raw: unknown = JSON.parse(jsonStr.slice(start, end));
+
+    if (typeof raw !== 'object' || raw === null) {
+      throw new Error('AI response is not an object');
+    }
+
+    const r = raw as Record<string, unknown>;
+    const rawCycles: unknown[] = Array.isArray(r['cycles']) ? r['cycles'] : [];
+
+    const cycles: Cycle[] = [];
+    const cycleErrors: string[] = [];
+    for (const rawCycle of rawCycles) {
+      const result = CycleFactory.parse(rawCycle);
+      if (result.ok) {
+        cycles.push(result.cycle);
+      } else {
+        cycleErrors.push(`Cycle parse error: ${result.errors.join('; ')}`);
+      }
+    }
+
+    if (cycleErrors.length > 0) {
+      console.warn('[Router] Some AI-generated cycles failed validation:', cycleErrors);
+    }
+
+    const VALID_DOMAINS: Routing['domain'][] = ['SALES', 'LOGISTICS', 'INVENTORY', 'OPERATIONS', 'ADMINISTRATION', 'META'];
+    const VALID_ENGINES: Routing['engine'][] = ['claude', 'antigravity', 'cursor', 'windsurf', 'codex-cli', 'cline', 'aider', 'opencode'];
+    const VALID_RISKS: Routing['risk'][] = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
+
+    const domain = VALID_DOMAINS.includes(r['domain'] as Routing['domain']) ? r['domain'] as Routing['domain'] : 'META';
+    const engine = VALID_ENGINES.includes(r['engine'] as Routing['engine']) ? r['engine'] as Routing['engine'] : 'claude';
+    const risk   = VALID_RISKS.includes(r['risk'] as Routing['risk'])       ? r['risk'] as Routing['risk']   : 'MEDIUM';
+
+    return {
+      domain,
+      agent: (typeof r['agent'] === 'string') ? r['agent'] : 'claude',
+      engine,
+      model: (typeof r['model'] === 'string') ? r['model'] : 'pro',
+      risk,
+      rationale: (typeof r['rationale'] === 'string') ? r['rationale'] : '',
+      analysis: (typeof r['analysis'] === 'string') ? r['analysis'] : '',
+      contextBudget: (typeof r['contextBudget'] === 'number') ? r['contextBudget'] : undefined,
+      cycles,
+    };
+
   } catch (e) {
-    throw new Error('Failed to parse AI routing response');
+    throw new Error(`Failed to parse AI routing response: ${(e as Error).message}`);
   }
 }
 
@@ -174,61 +241,27 @@ function fallbackKeywordRoute(text: string, override?: Engine): Routing {
   
   return {
     domain: 'META',
-    agent: 'architect',
+    agent: 'claude',
     engine,
     model: 'pro',
     risk: 'MEDIUM',
     rationale: 'Decentralized routing. Delegated to agent for manual triage.',
-    analysis: 'API keys missing. Agent must read directive and spawn sub-tasks manually.',
-    subTasks: [
-      {
-        title: 'Triage & Route',
-        agent: 'architect',
-        instruction: `[DECENTRALIZED ROUTING]\nRead directive and manually create JSON sub-tasks in tasks/ folder.
-
-Model Routing Rules:
-- Opus 4.8 (ultracode, high reasoning effort, workflows enabled): architecture, planning, security, final audit, release validation, code-review (ONLY FOR CLAUDE AGENT)
-- Sonnet (Claude 3.5): coding, refactoring, complex logic (Primary for Antigravity & Claude)
-- Gemini 3.1 Pro: repository-wide analysis, search, multi-file context (Available for Antigravity)
-- Haiku: grep, summaries, classification
-
-Context Budget Rules (Strict Thresholds):
-- < 20k: normal
-- 20k-50k: capsule preferred
-- 50k-100k: capsule only
-- > 100k: mandatory compression
-
-Release Gate Rules:
-- Build, Lint, Tests, Review, Security MUST pass before a task is marked done.
-
-State Capsule Rules:
-Instead of passing full chat transcripts or large file diffs, use this exact minimal JSON structure for handoffs:
-{
-  "task": "ID",
-  "classification": "CONFIRMED",
-  "files": ["path/to/file.ts"],
-  "decision": "soft-delete only",
-  "rootCause": "Explanation of bug...",
-  "changes": ["deleteMany -> updateMany", "preserve API"],
-  "validation": { "build": true, "eslint": true, "tests": "missing" },
-  "openQuestions": ["Need repository tests?"],
-  "next": "add tests"
-}
-
-Agent Assignment Rules:
-- CLAUDE: Main agent, Architect. Distributes tasks, builds architecture, writes core logic.
-- ANTIGRAVITY: Secondary agent, Helper. Executes tasks that do not break structure, safe modifications.
-
-STRICT ORCHESTRATOR USAGE:
-1. MEMORY: Always use memory functionality to share context.
-2. LOGS: Document every step and decision in the task's "notes" array.
-3. DELEGATION: Claude (Main) MUST delegate safe, structural-preserving tasks to Antigravity (Helper).
-
-Directive:
-${text}
-
-${getCapabilitiesText()}`
-      }
+    analysis: 'API keys missing. Agent must read directive and spawn an Engineering Cycle manually.',
+    cycles: [
+      CycleFactory.create({
+        missionId: 'fallback-mission',
+        objective: `[DECENTRALIZED ROUTING]\nRead directive and manually create a JSON cycle in cycles/ folder.\n\nDirective:\n${text}\n\n${getCapabilitiesText()}`,
+        sourceAgent: 'orchestrator',
+        targetAgent: engine,
+        risk: 'MEDIUM',
+        payload: {
+          stateCapsule: {
+            goal: 'Triage user directive',
+            scope: [],
+            plan: []
+          }
+        }
+      })
     ]
   };
 }

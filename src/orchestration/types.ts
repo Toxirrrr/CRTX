@@ -1,5 +1,6 @@
 // Mirrors the schema in ai/multiagent/handshake.json so Claude and
 // Antigravity exchange tasks in a shared, pre-agreed shape.
+
 export type HandshakeStatus = 'REQUESTED' | 'ACCEPTED' | 'IN_PROGRESS' | 'PARKED' | 'ESCALATED' | 'REVIEW' | 'REVIEW_FAILED' | 'COMPLETED' | 'FAILED';
 
 export interface AgentTask {
@@ -42,6 +43,70 @@ export interface AgentTaskInput {
     validation?: { lint?: boolean; tests?: boolean; security?: boolean };
     [key: string]: any;
   };
+}
+
+// --- Autonomous Cycle Engineering Types (Phase 1) ---
+
+export interface Mission {
+  id: string;
+  name: string;
+  description: string;
+  status: 'PLANNED' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED';
+  cycles: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type CycleState = 'PENDING' | 'INITIALIZING' | 'RUNNING' | 'VALIDATING' | 'QA_REVIEW' | 'ROLLING_BACK' | 'RECOVERING' | 'COMPLETED' | 'FAILED';
+
+export interface Cycle {
+  id: string;
+  missionId: string;
+  objective: string;
+  scope: {
+    include: string[];
+    exclude: string[];
+  };
+  budget: {
+    maxHours: number;
+    maxFiles: number;
+    maxModules: number;
+  };
+  constraints: string[];
+  risk: string;
+  definitionOfDone: string[];
+  qualityGates: string[];
+  execution: {
+    status: CycleState;
+    sourceAgent: string;
+    targetAgent: string;
+    payload: Record<string, any>;
+  };
+  evidence: string[];
+  artifacts: string[];
+  audit: Record<string, any>;
+  releaseDecision: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CycleResult {
+  success: boolean;
+  evidenceId?: string;
+  error?: Error;
+  metrics: {
+    durationMs: number;
+    tokensUsed: number;
+    cost: number;
+  };
+}
+
+export interface CycleArtifact {
+  id: string;
+  cycleId: string;
+  type: string;
+  content: string;
+  createdAt: string;
 }
 
 // --- CRTX v2 Execution Engine Types (Phase P0 & P1) ---
@@ -152,7 +217,7 @@ export interface IMiniKnowledgeGraph {
 
 export interface GraphNode {
   id: string;
-  type: 'file' | 'module' | 'task' | 'symbol' | 'api' | 'agent';
+  type: 'file' | 'module' | 'cycle' | 'symbol' | 'api' | 'agent';
   metadata?: Record<string, any>;
 }
 
@@ -193,4 +258,3 @@ export interface IQueueAdapter {
   acknowledge(messageId: string): Promise<void>;
   nack(messageId: string): Promise<void>;
 }
-

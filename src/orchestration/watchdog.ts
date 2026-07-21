@@ -5,10 +5,12 @@ import { EventEmitter } from 'node:events';
 import { ResultCache } from '../token/ResultCache';
 
 const ROOT       = path.join(__dirname, '..', '..');
-const TASKS_DIR  = path.join(ROOT, 'tasks');
+const CYCLES_DIR = path.join(ROOT, 'cycles');  // Primary: CRTX Runtime Cycles
+const TASKS_DIR  = path.join(ROOT, 'tasks');   // Legacy: kept for backward compat during migration
 const LOCKS_DIR  = path.join(ROOT, 'locks');
 const LOGS_DIR   = path.join(ROOT, 'logs');
 const CAPS_DIR   = path.join(ROOT, 'memory', 'file_capsules');
+
 
 const POLL_MS          = Number(process.env.WATCHDOG_POLL_MS    ?? 60_000);
 const STALL_MS         = Number(process.env.WATCHDOG_STALL_MS   ?? 15 * 60_000);
@@ -98,23 +100,26 @@ export class Watchdog extends EventEmitter {
    * Emits 'change' if any locks were removed so the dashboard updates live.
    */
   async cleanOrphanedLocks(): Promise<void> {
-    if (!fs.existsSync(LOCKS_DIR) || !fs.existsSync(TASKS_DIR)) return;
+    // Read from CYCLES_DIR (primary) and TASKS_DIR (legacy fallback)
+    const primaryDir = fs.existsSync(CYCLES_DIR) ? CYCLES_DIR : TASKS_DIR;
+    if (!fs.existsSync(LOCKS_DIR) || !fs.existsSync(primaryDir)) return;
 
-    // Build taskId → status map from actual task files on disk
+    // Build taskId → status map from actual cycle/task files on disk
     const taskStatusById = new Map<string, string>();
-    try {
-      const taskFiles = (await fsp.readdir(TASKS_DIR))
-        .filter(f => f.endsWith('.json') && !f.startsWith('_'));
-      for (const tf of taskFiles) {
-        try {
-          const raw = await fsp.readFile(path.join(TASKS_DIR, tf), 'utf8');
-          const t = JSON.parse(raw) as { id?: string; status?: string };
-          if (t.id) taskStatusById.set(t.id, t.status ?? 'unknown');
-        } catch { /* malformed task file — skip */ }
-      }
-    } catch {
-      return; // tasks dir unreadable — bail safely, do not delete anything
-    }
+    const readFrom = async (dir: string) => {
+      try {
+        const files = (await fsp.readdir(dir)).filter(f => f.endsWith('.json') && !f.startsWith('_'));
+        for (const tf of files) {
+          try {
+            const raw = await fsp.readFile(path.join(dir, tf), 'utf8');
+            const t = JSON.parse(raw) as { id?: string; status?: string };
+            if (t.id) taskStatusById.set(t.id, t.status ?? 'unknown');
+          } catch { /* malformed file — skip */ }
+        }
+      } catch { /* dir unreadable — skip */ }
+    };
+    await readFrom(CYCLES_DIR);
+    await readFrom(TASKS_DIR); // legacy tasks still count until fully migrated
 
     const lockFiles = (await fsp.readdir(LOCKS_DIR))
       .filter(f => f.endsWith('.lock') && !f.startsWith('_'));
@@ -293,19 +298,21 @@ export class Watchdog extends EventEmitter {
   }
 
   private async _tick(): Promise<void> {
-    if (!fs.existsSync(TASKS_DIR)) return;
-    
+    // Read from CYCLES_DIR (primary) or TASKS_DIR (legacy fallback)
+    const watchDir = fs.existsSync(CYCLES_DIR) ? CYCLES_DIR : TASKS_DIR;
+    if (!fs.existsSync(watchDir)) return;
+
     const boardState = await this.board.read();
     const agents = boardState.agents;
     const locks = boardState.locks;
-    
-    const files = (await fsp.readdir(TASKS_DIR)).filter((f) => f.endsWith('.json') && !f.startsWith('_'));
+
+    const files = (await fsp.readdir(watchDir)).filter((f) => f.endsWith('.json') && !f.startsWith('_'));
     const now = Date.now();
     let changed = false;
 
     // 1. Stale-task recovery
     for (const file of files) {
-      const full = path.join(TASKS_DIR, file);
+      const full = path.join(watchDir, file);
       let task: WatchedTask;
       try {
         task = JSON.parse(await fsp.readFile(full, 'utf8')) as WatchedTask;
@@ -338,7 +345,7 @@ export class Watchdog extends EventEmitter {
     // Tasks stay in 'pending' until a listener script strictly wakes up its agent.
 
     for (const file of files) {
-      const full = path.join(TASKS_DIR, file);
+      const full = path.join(watchDir, file);
       let task: WatchedTask;
       try {
         task = JSON.parse(await fsp.readFile(full, 'utf8')) as WatchedTask;
@@ -386,7 +393,7 @@ export class Watchdog extends EventEmitter {
     } catch {}
 
     for (const file of files) {
-      const full = path.join(TASKS_DIR, file);
+      const full = path.join(watchDir, file);
       let task: WatchedTask;
       try {
         task = JSON.parse(await fsp.readFile(full, 'utf8')) as WatchedTask;

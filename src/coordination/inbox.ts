@@ -2,7 +2,8 @@ import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { route, Routing, Engine } from '../orchestration/router';
+import { Engine } from '../orchestration/router';
+import { route, LegacyRouting as Routing } from '../orchestration/RouterFacade';
 
 const ROOT = path.join(__dirname, '..', '..');
 const INBOX_DIR = path.join(ROOT, 'inbox');

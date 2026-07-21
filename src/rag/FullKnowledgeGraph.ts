@@ -33,19 +33,23 @@ export class FullKnowledgeGraph implements IFullKnowledgeGraph {
     return this.queryGraph(endpoint, 3, ['IMPLEMENTS', 'CALLS']);
   }
 
-  async ingestModifications(taskId: string, filesChanged: string[]): Promise<void> {
+  /**
+   * Ingest file modifications made by a Cycle.
+   * @param cycleId - The Cycle ID (formerly taskId — interface param name preserved for compat)
+   */
+  async ingestModifications(cycleId: string, filesChanged: string[]): Promise<void> {
     for (const file of filesChanged) {
       try {
         const content = await fsp.readFile(file, 'utf8');
         const { nodes, edges } = this.astParser.parseFile(file, content);
-        
+
         nodes.forEach(n => this.addNode(n));
         edges.forEach(e => this.addEdge(e));
 
-        // Connect task to the file
-        this.addNode({ id: taskId, type: 'task' });
-        this.addEdge({ sourceId: taskId, targetId: file, relation: 'MODIFIES' });
-        
+        // Connect cycle to the file
+        this.addNode({ id: cycleId, type: 'cycle' });
+        this.addEdge({ sourceId: cycleId, targetId: file, relation: 'MODIFIES' });
+
       } catch (err: any) {
         if (err.code !== 'ENOENT') {
           console.warn(`[KnowledgeGraph] Failed to ingest ${file}: ${err.message}`);
