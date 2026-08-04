@@ -1,0 +1,141 @@
+{
+  "version": "1.1.1",
+  "filesChanged": [
+    "Heap-After.heapsnapshot",
+    "Heap-Before.heapsnapshot",
+    "client",
+    "crtx",
+    "e2e/live-map/context-menu.spec.ts",
+    "e2e/live-map/drawers.spec.ts",
+    "e2e/live-map/hotkeys.spec.ts",
+    "e2e/live-map/memory-leak.spec.ts",
+    "e2e/playwright/.auth/user.json",
+    "e2e/settings.spec.ts",
+    "e2e/shifts.spec.ts",
+    "e2e/superadmin-matrix.spec.ts",
+    "e2e/tier1-feature/critical-tasks-flow.spec.ts",
+    "e2e/tier1-feature/smoke-cycle10.spec.ts",
+    "e2e/tier1-feature/tasks-assignment.spec.ts",
+    "e2e/tier1-feature/ui_ux_new_pages.spec.ts",
+    "e2e/tier3-cross/p0-03-realtime.spec.ts",
+    "package-lock.json",
+    "package.json",
+    "server",
+    ".crtx/evidence/lint.json",
+    ".crtx/evidence/typecheck.json",
+    "agent.md",
+    "agents_audit.md",
+    "apply_guards.py",
+    "dashboard_audit.md",
+    "failures.txt",
+    "fix_metadata2.js",
+    "inventory_audit.md",
+    "max_w_audit.json",
+    "replace.js",
+    "tasks_audit.md",
+    "temp_backup/client.simulator.service.ts",
+    "temp_backup/global.d.ts",
+    "temp_backup/simulator.controller.ts",
+    "temp_backup/simulator.service.ts",
+    "temp_backup/simulator.store.ts",
+    "temp_backup/simulator.vue"
+  ],
+  "skillsRun": [
+    {
+      "metadata": {
+        "id": "architecture-drift-detector",
+        "version": "1.0.0",
+        "stage": "Architecture",
+        "priority": "P0",
+        "depends": []
+      },
+      "source": "C:\\WEB\\REAL\\AGENT_OPS_PLATFORM\\crtx\\policies\\skills\\architecture-drift-detector.md"
+    },
+    {
+      "metadata": {
+        "id": "release-freeze-validator",
+        "version": "1.0.0",
+        "stage": "Architecture",
+        "priority": "P0",
+        "depends": []
+      },
+      "source": "C:\\WEB\\REAL\\AGENT_OPS_PLATFORM\\crtx\\policies\\skills\\release-freeze-validator.md"
+    },
+    {
+      "metadata": {
+        "id": "performance-budget-auditor",
+        "version": "1.0.0",
+        "stage": "Engineering",
+        "priority": "P0",
+        "depends": []
+      },
+      "source": "C:\\WEB\\REAL\\AGENT_OPS_PLATFORM\\crtx\\policies\\skills\\performance-budget-auditor.md"
+    },
+    {
+      "metadata": {
+        "id": "memory-leak-scanner",
+        "version": "1.0.0",
+        "stage": "Engineering",
+        "priority": "P0",
+        "depends": []
+      },
+      "source": "C:\\WEB\\REAL\\AGENT_OPS_PLATFORM\\crtx\\policies\\skills\\memory-leak-scanner.md"
+    },
+    {
+      "metadata": {
+        "id": "dto-contract-snapshot",
+        "version": "1.0.0",
+        "stage": "Engineering",
+        "priority": "P0",
+        "depends": []
+      },
+      "source": "C:\\WEB\\REAL\\AGENT_OPS_PLATFORM\\crtx\\policies\\skills\\dto-contract-snapshot.md"
+    },
+    {
+      "metadata": {
+        "id": "production-logic-auditor",
+        "version": "1.0.0",
+        "stage": "Engineering",
+        "priority": "P0",
+        "depends": [
+          "evidence-registry",
+          "architecture-drift-detector"
+        ]
+      },
+      "source": "C:\\WEB\\REAL\\AGENT_OPS_PLATFORM\\crtx\\policies\\skills\\production-logic-auditor.md"
+    },
+    {
+      "metadata": {
+        "id": "ux-consistency-auditor",
+        "version": "1.0.0",
+        "stage": "UX",
+        "priority": "P1",
+        "depends": []
+      },
+      "source": "C:\\WEB\\REAL\\AGENT_OPS_PLATFORM\\crtx\\policies\\skills\\ux-consistency-auditor.md"
+    },
+    {
+      "metadata": {
+        "id": "evidence-registry",
+        "version": "1.0.0",
+        "stage": "Infrastructure",
+        "priority": "P0",
+        "depends": []
+      },
+      "source": "C:\\WEB\\REAL\\AGENT_OPS_PLATFORM\\crtx\\policies\\skills\\evidence-registry.md"
+    }
+  ],
+  "evidence": {
+    "lint": {
+      "status": "PASS",
+      "timestamp": "2026-08-03T22:18:28.711Z",
+      "output": ""
+    },
+    "typecheck": {
+      "status": "PASS",
+      "timestamp": "2026-08-03T22:18:29.036Z",
+      "output": ""
+    }
+  },
+  "timestamp": "2026-08-03T23:40:52.690Z"
+}
