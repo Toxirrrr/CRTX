@@ -1,0 +1,10 @@
+{
+  "id": "INC-2026-08-001",
+  "title": "Cross-tenant data leak in Live Map",
+  "description": "Drivers from tenant A were briefly visible to admins of tenant B on the live map due to a missing organizationId filter in the WebSocket stream.",
+  "rootCause": "The WsGateway for tracking emitted location updates to the global room instead of the org-specific room when the driver connection re-initialized after an offline period.",
+  "impactedFiles": [
+    "server/src/tracking/tracking.gateway.ts",
+    "server/src/tracking/driver-location.service.ts"
+  ]
+}
