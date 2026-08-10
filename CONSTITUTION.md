@@ -591,3 +591,174 @@ E2E
 
 Ëþáîé êðóïíûé àðõèòåêòóðíûé ðåôàêòîðèíã òðåáóåò íîâîãî îòäåëüíîãî Engineering Cycle ñ íîâûì Execution Plan.
 
+
+==================================================
+MASTER ARCHITECT EXECUTION PROTOCOL (MAEP)
+==================================================
+
+Mandatory for ALL agents working in this repository.
+No exceptions. No shortcuts. No ad-hoc implementation.
+
+---
+
+## ABSOLUTE RULE
+
+ZERO direct code writing before a complete CRTX Execution Cycle is built.
+
+Even a one-line change requires a full Cycle Plan before implementation.
+
+---
+
+## PHASE 0 â€” LOAD CONTEXT
+
+Before starting any task:
+- Read crtx/CONSTITUTION.md
+- Read relevant docs/ architecture documents
+- Read Prisma schema
+- Read existing RBAC policies
+- Read Release Freeze rules
+- Read PROJECT_STATE and DEFINITION_OF_DONE
+
+Never invent architecture. Never create new patterns.
+Work only within the existing system.
+
+---
+
+## PHASE 1 â€” ANALYZE REQUEST
+
+Fully decompose the task before any action.
+
+Identify:
+- Which pages are affected
+- Which API endpoints are affected
+- Which services are affected
+- Which DTOs are affected
+- Which Prisma models are affected
+- Which permissions (RBAC) are required
+- Which WebSocket events are involved
+- Which existing components are reused
+- Which dependencies exist
+- Which risks exist
+
+No implementation during this phase. Analysis only.
+
+---
+
+## PHASE 2 â€” BUILD CRTX EXECUTION CYCLE PLAN
+
+Build a complete internal Cycle Plan before writing any code.
+
+Each Cycle must contain:
+- Goal
+- Affected Files
+- Dependencies
+- Acceptance Criteria
+- Possible Risks
+- Rollback Strategy
+- Definition of Done
+
+Cycle structure (adapt as needed per task):
+
+Cycle 1 â€” Audit Current State
+Cycle 2 â€” Backend Changes
+Cycle 3 â€” Database Validation
+Cycle 4 â€” RBAC
+Cycle 5 â€” Tenant Isolation
+Cycle 6 â€” API
+Cycle 7 â€” Frontend
+Cycle 8 â€” State Management
+Cycle 9 â€” Realtime / WebSocket
+Cycle 10 â€” Validation
+Cycle 11 â€” Error Handling
+Cycle 12 â€” UI Polish
+Cycle 13 â€” Integration
+Cycle 14 â€” Regression
+Cycle 15 â€” Performance
+Cycle 16 â€” Final Production Verification
+
+---
+
+## PHASE 3 â€” GLOBAL EXECUTION PLAN
+
+After all Cycles are defined, produce the full Execution Plan:
+
+Cycle 1 -> Cycle 2 -> Cycle 3 -> ... -> Production Ready
+
+No execution until the entire plan is built.
+
+---
+
+## PHASE 4 â€” VERIFY PLAN
+
+Before starting implementation, verify:
+
+- No missing dependencies
+- No architectural conflicts
+- No Release Freeze violations
+- No Tenant Isolation violations
+- No RBAC violations
+- No UI System violations
+- No Prisma Schema violations
+
+If any violation found: return to Cycle Planning.
+
+---
+
+## PHASE 5 â€” EXECUTION
+
+Only after the full Cycle Plan is approved:
+
+Execute strictly sequentially.
+Cycle N -> verify -> Cycle N+1 -> verify -> ...
+
+Prohibited during execution:
+- Skipping cycles
+- Changing architecture
+- Writing speculative/future code
+- Refactoring unrelated code
+- Modifying unrelated files
+
+---
+
+## PHASE 6 â€” AFTER EVERY CYCLE
+
+After each Cycle, run:
+1. Self Review
+2. Architecture Review
+3. RBAC Review
+4. Tenant Isolation Review
+5. API Review
+6. UI Review
+7. Type Check
+8. Lint Check
+9. Regression Check
+
+A Cycle is NOT complete until all 9 checks pass.
+
+---
+
+## PHASE 7 â€” FINAL RELEASE AUDIT
+
+After all Cycles complete, verify:
+
+- CRUD works correctly
+- Permissions enforced
+- organizationId present everywhere required
+- API compatibility maintained
+- Frontend compatibility maintained
+- Mobile not broken
+- WebSocket not broken
+- Prisma schema correct
+- No Dead Code
+- No TODO left
+- No Mock data
+- No console.log
+- No temporary code
+- No Feature Drift
+- No architectural violations
+
+---
+
+## ðŸš€ FULL OUTPUT ENFORCEMENT
+**CRITICAL**: MAXIMUM PERFORMANCE REQUIRED. Do not economize tokens. Never truncate code. Never use placeholders. Always output full, complete, and functional files.
+

@@ -1,6 +1,9 @@
 ---
-name: backend-security
-description: Security audit rules — tenant isolation, RBAC, mass-assignment, audit logs, WebSocket scope, secrets. Use when adding/reviewing any endpoint, query, gateway, or auth flow. Security is a mandatory pipeline stage.
+id: backend-security
+version: 1.0.0
+stage: Engineering
+priority: P1
+depends: []
 ---
 Feature is incomplete until security audit passes.
 

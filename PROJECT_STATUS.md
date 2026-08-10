@@ -1,19 +1,34 @@
-# Project Status
+# Project Status (Agent Ops Platform)
 
-CRTX is continuously evolving. This document clarifies what is safe for production and what is still experimental.
+Актуальное состояние модулей платформы для production-релиза.
 
-## 🟢 Stable (Ready for Production)
-The core specifications and protocols. You can safely build infrastructure on these.
-- **The Filesystem Protocol**: `tasks/`, `evidence/`, `capsules/` schema.
-- **Capability Routing Logic**: Decoupling tasks from specific models.
-- **Local Runtime Initialization**: Standard CLI and workspace bootstrapping.
+## 🟢 FROZEN — Production Ready
+Архитектура заморожена. Изменения только при реальных production-багах.
 
-## 🟡 Experimental (Use with Caution)
-Features currently undergoing testing. APIs may change.
-- **LTCE Database Adapters**: The SQLite persistence layer for memory.
-- **Cross-Agent Task DAGs**: Complex dependency resolution between tasks.
+- **Tasks** — CRUD, реалтайм WS, delta sync, bulk ops ✅
+- **Tracking / Live Map** — GPS WebSocket, trails, agent status ✅
+- **Inventory** — складской учёт, sync, WS events ✅
+- **Deliveries** — CRUD + реалтайм ✅
+- **Warehouses** — CRUD ✅
+- **Shifts** — start/end/status, ShiftControlPanel ✅
+- **Auth** — JWT + cookie, refresh, RBAC Guards ✅
+- **Territories** — CRUD + map polygons ✅
+- **Zones** — CRUD + filter + drawer ✅
+- **Routes** — OSRM, AI-оптимизация, bulk delete ✅
+- **Drivers** — CRUD + live status ✅
+- **Sales Agents** — CRUD + live status ✅
+- **Analytics / Dashboard** — KPIs, charts ✅
+- **Notifications** — WS + browser push ✅
+- **Replenishment / Returns / Incidents** — CRUD ✅
+- **Global Error Handling** — api.client.ts toast + error-handler.ts Vue boundary ✅
+- **i18n (ru/en/uz)** — Waves 1–5 FROZEN ✅
+- **CI/CD** — PASS ✅
 
-## ⚪ Planned (Not Yet Implemented)
-Features on the roadmap but not yet available.
-- **Standardized Webhook Events**: Emitting state changes to external systems (Slack, etc.).
-- **Strict Schema Validation Enforcer**: Rejecting malformed capsules at the filesystem level.
+## 🟡 Доделано в этом цикле
+- **Logistics Page** — реализована: KPI-карты, маршруты водителей, фильтрация, AI-оптимизация, bulk delete ✅
+- **error-handler.ts** — добавлен toast для Vue runtime ошибок ✅
+
+## ⚪ Post v1.0.0 (Epic backlog)
+- Help & Onboarding System (Phase 1-4)
+- Standardized Webhook Events
+- Strict Schema Validation Enforcer

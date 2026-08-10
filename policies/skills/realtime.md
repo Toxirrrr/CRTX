@@ -1,6 +1,9 @@
 ---
-name: realtime
-description: Socket.io client/server, BullMQ, Redis pub/sub patterns. Use for live updates, socket composables, GPS pipeline.
+id: realtime
+version: 1.0.0
+stage: Engineering
+priority: P1
+depends: []
 ---
 Flow: `Socket→Composable→Store→UI`. Never socket events in components.
 Lifecycle: connect in `onMounted`, cleanup `off` in `onUnmounted`. Module-level singleton per namespace.

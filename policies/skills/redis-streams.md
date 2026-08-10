@@ -1,6 +1,9 @@
 ---
-name: redis-streams
-description: Redis Streams patterns for durable event ingestion/fan-out — consumer groups, XADD/XREADGROUP/XACK, capped streams, and pending-entry recovery. Use when evaluating or implementing stream-based event pipelines (e.g. tracking/event ingest) as an alternative to plain pub/sub.
+id: redis-streams
+version: 1.0.0
+stage: Engineering
+priority: P1
+depends: []
 ---
 
 # Redis Streams patterns

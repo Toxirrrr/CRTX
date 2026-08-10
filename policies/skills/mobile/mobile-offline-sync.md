@@ -1,6 +1,9 @@
 ---
-name: mobile-offline-sync
-description: "Mobile Offline Sync Engineer: MMKV, Queue, Sync Engine, NetInfo, Retry Logic, Conflict Resolution"
+id: mobile-offline-sync
+version: 1.0.0
+stage: Engineering
+priority: P1
+depends: []
 ---
 
 # Mobile Offline Sync Engineer

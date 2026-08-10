@@ -1,3 +1,10 @@
+---
+id: skill-content
+version: 1.0.0
+stage: Engineering
+priority: P1
+depends: []
+---
 # {{TITLE}}
 
 {{DESCRIPTION}}

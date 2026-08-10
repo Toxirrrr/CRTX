@@ -1,6 +1,9 @@
 ---
-name: nestjs-architecture
-description: NestJS layering, guard stack, DTO contract. Use when editing any controller, service, module or endpoint in server/src/modules/.
+id: nestjs-architecture
+version: 1.0.0
+stage: Engineering
+priority: P1
+depends: []
 ---
 Layer order (never skip): `Controller → Service → Repository`
 - Controller: HTTP routing + DTO binding + Swagger only. No business logic, no Prisma.

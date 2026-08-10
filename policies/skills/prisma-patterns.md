@@ -1,6 +1,9 @@
 ---
-name: prisma-patterns
-description: Prisma repository conventions — BaseRepository.scope, soft-delete, SELECT consts, pagination, schema rules. Use when editing *.repository.ts, schema.prisma, or migrations.
+id: prisma-patterns
+version: 1.0.0
+stage: Engineering
+priority: P1
+depends: []
 ---
 `PrismaService` injected only in `*.repository.ts`. All repos extend `BaseRepository`.
 

@@ -1,3 +1,10 @@
+---
+id: quick-reference
+version: 1.0.0
+stage: Engineering
+priority: P1
+depends: []
+---
 ## When to Apply
 
 当任务涉及 **UI 结构、视觉设计决策、交互模式或用户体验质量控制** 时，应使用此 Skill。

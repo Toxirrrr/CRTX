@@ -1,6 +1,9 @@
 ---
-name: mobile-delivery-workflow
-description: "Mobile Delivery Workflow Engineer: tasks, deliveries, status changes, proof of delivery, signatures, photos"
+id: mobile-delivery-workflow
+version: 1.0.0
+stage: Engineering
+priority: P1
+depends: []
 ---
 
 # Mobile Delivery Workflow Engineer

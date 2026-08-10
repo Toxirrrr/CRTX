@@ -1,6 +1,9 @@
 ---
-name: mobile-qa
-description: "Mobile QA / E2E Engineer: Detox, Maestro, Expo E2E, critical flows"
+id: mobile-qa
+version: 1.0.0
+stage: Engineering
+priority: P1
+depends: []
 ---
 
 # Mobile QA / E2E Engineer

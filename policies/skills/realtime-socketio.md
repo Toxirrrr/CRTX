@@ -1,6 +1,9 @@
 ---
-name: realtime-socketio
-description: Socket.io gateway rules for this backend — WsJwtGuard auth, org-scoped rooms (never global emit), emit-after-write, GPS throttling, room/event naming, and reconnect delta-sync. Use when editing gateways in server/src/modules/realtime-gateways/ or any WebSocket emit.
+id: realtime-socketio
+version: 1.0.0
+stage: Engineering
+priority: P1
+depends: []
 ---
 
 # Realtime / Socket.io (Agent Ops Platform)

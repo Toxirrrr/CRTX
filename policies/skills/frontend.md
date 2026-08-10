@@ -1,6 +1,9 @@
 ---
-name: frontend
-description: Nuxt 3/Vue 3 patterns for client/**. Use for UI, stores, composables, map, socket work.
+id: frontend
+version: 1.0.0
+stage: Engineering
+priority: P1
+depends: []
 ---
 `<script setup lang="ts">` only. No Options API.
 Pinia: `defineStore('name', () => {})` only. No prop-drilling >2 levels.

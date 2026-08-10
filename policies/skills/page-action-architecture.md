@@ -1,6 +1,9 @@
 ---
-name: page-action-architecture
-description: Page action/UI rules for client/** (and mobile/** pre-Foundation). Read BEFORE building any page header, button, row action, form, or dashboard tile. Source of truth = D021.
+id: page-action-architecture
+version: 1.0.0
+stage: Engineering
+priority: P1
+depends: []
 ---
 Source of truth: `crtx/decisions/D021.json` + `crtx/decisions/UX-3-page-action-architecture.md`. These are the enforceable rules.
 

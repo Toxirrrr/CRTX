@@ -1,6 +1,9 @@
 ---
-name: analytics-pipeline
-description: Analytics rules for backend aggregation and frontend charts. Use when editing analytics.service.ts, analytics endpoints, or analytics stores/charts.
+id: analytics-pipeline
+version: 1.0.0
+stage: Engineering
+priority: P1
+depends: []
 ---
 Backend: every aggregation scoped by `organizationId`. SUPER_ADMIN cross-org views check role first. Heavy aggregations use `$queryRaw` with composite descending time-series indexes. Responses: `{success,data}` via `ResponseInterceptor`.
 

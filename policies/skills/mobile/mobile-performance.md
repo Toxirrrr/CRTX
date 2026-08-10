@@ -1,6 +1,9 @@
 ---
-name: mobile-performance
-description: "Mobile Performance Engineer: render performance, battery usage, memory leaks, background services, large task lists"
+id: mobile-performance
+version: 1.0.0
+stage: Engineering
+priority: P1
+depends: []
 ---
 
 # Mobile Performance Engineer

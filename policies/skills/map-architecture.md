@@ -1,6 +1,9 @@
 ---
-name: map-architecture
-description: Map Architecture & Optimization Standard. Use when working on frontend map components, rendering markers, clustering, or handling live GPS updates on the map.
+id: map-architecture
+version: 1.0.0
+stage: Engineering
+priority: P1
+depends: []
 ---
 
 # Map Architecture & Optimization Standard

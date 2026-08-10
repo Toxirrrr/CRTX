@@ -1,6 +1,9 @@
 ---
-name: production-readiness
-description: Definition-of-done and hardening gate for this platform — reality-first validation, No-Fake-UI policy, priority order, regression-neighbor checks, risk classification, and the full propagation chain. Use before declaring any task complete or when reviewing a change for completeness.
+id: production-readiness
+version: 1.0.0
+stage: Engineering
+priority: P1
+depends: []
 ---
 
 # Production Readiness (Agent Ops Platform)

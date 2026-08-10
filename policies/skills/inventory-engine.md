@@ -1,6 +1,9 @@
 ---
-name: inventory-engine
-description: Inventory & replenishment rules for this backend — StockMovement-first mutation, polymorphic InventoryNode, thresholds/alerts, the replenishment cascade, and map-marker color. Use when editing server/src/modules/inventory/ or replenishment/, or any stock quantity change.
+id: inventory-engine
+version: 1.0.0
+stage: Engineering
+priority: P1
+depends: []
 ---
 
 # Inventory Engine (Agent Ops Platform)

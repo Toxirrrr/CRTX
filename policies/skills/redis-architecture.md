@@ -1,6 +1,9 @@
 ---
-name: redis-architecture
-description: Redis usage rules for this backend — cache-not-state discipline, mandatory TTLs, key naming, ioredis pipelines, Socket.io Redis adapter clustering, and the JWT blocklist. Use when touching Redis reads/writes, caching, the realtime adapter, or auth revocation.
+id: redis-architecture
+version: 1.0.0
+stage: Engineering
+priority: P1
+depends: []
 ---
 
 # Redis Architecture (Agent Ops Platform)

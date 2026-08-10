@@ -1,6 +1,9 @@
 ---
-name: postgres-performance
-description: PostgreSQL + PostGIS performance patterns for this backend — indexing strategy, time-series composite indexes, paginated transactions, and spatial queries. Use when adding indexes, writing heavy/list/analytics queries, or PostGIS proximity lookups.
+id: postgres-performance
+version: 1.0.0
+stage: Engineering
+priority: P1
+depends: []
 ---
 
 # Postgres / PostGIS Performance (Agent Ops Platform)

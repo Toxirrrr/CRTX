@@ -1,6 +1,9 @@
 ---
-name: mobile-security
-description: "Mobile Security Engineer: JWT, refresh token, secure store, biometrics, device security"
+id: mobile-security
+version: 1.0.0
+stage: Engineering
+priority: P1
+depends: []
 ---
 
 # Mobile Security Engineer

@@ -1,6 +1,9 @@
 ---
-name: bullmq-patterns
-description: BullMQ queue/worker patterns. Use when adding queues, processors, or background jobs in server/src/modules/.
+id: bullmq-patterns
+version: 1.0.0
+stage: Engineering
+priority: P1
+depends: []
 ---
 HTTP thread never blocks on Postgres — async work goes through BullMQ workers.
 

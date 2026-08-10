@@ -1,6 +1,9 @@
 ---
-name: backend
-description: NestJS/Prisma/PostgreSQL patterns for server/**. Use for API endpoints, services, repositories, guards.
+id: backend
+version: 1.0.0
+stage: Engineering
+priority: P1
+depends: []
 ---
 Stack: NestJS · Prisma · PostgreSQL+PostGIS · Redis 7 · BullMQ · Socket.io.
 Flow: `Controller→Service→Repository`. Controllers: routing+DTO only. Services: logic. Repos: DB only.

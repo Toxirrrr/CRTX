@@ -1,6 +1,9 @@
 ---
-name: maplibre
-description: MapLibre GL JS patterns. Use for map markers, layers, clustering, zoom rendering.
+id: maplibre
+version: 1.0.0
+stage: Engineering
+priority: P1
+depends: []
 ---
 GeoJSON Source + Symbol Layers only. No HTML markers (>500 DOM = fail).
 MapLibre instance: `shallowRef`/`markRaw`/module-level singleton. Never `ref()`.

@@ -1,6 +1,9 @@
 ---
-name: gps-tracking
-description: End-to-end GPS tracking pipeline. Use when editing server/src/modules/tracking/, the tracking gateway, or the gps-persist BullMQ processor.
+id: gps-tracking
+version: 1.0.0
+stage: Engineering
+priority: P1
+depends: []
 ---
 Pipeline:
 ```
