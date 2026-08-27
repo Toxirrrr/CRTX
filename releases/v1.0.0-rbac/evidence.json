@@ -1,0 +1,46 @@
+{
+  "version": "1.0.0-rbac",
+  "filesChanged": [
+    "client",
+    "server",
+    ".crtx/evidence/lint.json",
+    ".crtx/evidence/typecheck.json",
+    "scratch_fix_types.js",
+    "scratch_fix_types2.js"
+  ],
+  "skillsRun": [
+    {
+      "metadata": {
+        "id": "release-freeze-validator",
+        "version": "1.0.0",
+        "stage": "Architecture",
+        "priority": "P0",
+        "depends": []
+      },
+      "source": "C:\\WEB\\REAL\\AGENT_OPS_PLATFORM\\crtx\\policies\\skills\\release-freeze-validator.md"
+    },
+    {
+      "metadata": {
+        "id": "evidence-registry",
+        "version": "1.0.0",
+        "stage": "Infrastructure",
+        "priority": "P0",
+        "depends": []
+      },
+      "source": "C:\\WEB\\REAL\\AGENT_OPS_PLATFORM\\crtx\\policies\\skills\\evidence-registry.md"
+    }
+  ],
+  "evidence": {
+    "lint": {
+      "status": "PASS",
+      "timestamp": "2026-08-10T20:35:24.158Z",
+      "output": ""
+    },
+    "typecheck": {
+      "status": "PASS",
+      "timestamp": "2026-08-10T20:35:24.561Z",
+      "output": ""
+    }
+  },
+  "timestamp": "2026-08-11T19:46:45.786Z"
+}
