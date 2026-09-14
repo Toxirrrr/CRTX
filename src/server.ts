@@ -19,6 +19,7 @@ import { Watchdog } from './orchestration/watchdog';
 import { NotificationService } from './notifications/notificationService';
 import { startListener } from './agents/listen-for-work';
 import { startHeartbeat } from './agents/heartbeat-client';
+import { coordinatorRouter } from './coordinator/router';
 import { RuntimeSelector } from './runtime/RuntimeSelector';
 import { ClaudeCodeAdapter } from './runtime/adapters/ClaudeCodeAdapter';
 import { AntigravityAdapter } from './runtime/adapters/AntigravityAdapter';
@@ -152,6 +153,12 @@ watchdog.start();
 const notifications = new NotificationService(board);
 notifications.on('notification', (n) => {});
 void notifications.start();
+
+// ── Multi-Agent Coordinator ───────────────────────────────────────────────────
+// Development orchestration infrastructure — controls PARALLEL AGENTS.
+// NOT part of Agent Ops Platform runtime. Belongs to CRTX tooling layer.
+// All state lives under crtx/coordinator/ on disk.
+app.use('/api/coordinator', coordinatorRouter);
 
 // ── Core data endpoints ───────────────────────────────────────────────────────
 

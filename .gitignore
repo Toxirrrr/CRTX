@@ -1,4 +1,4 @@
-node_modules/
+﻿node_modules/
 dist/
 .env
 .env.local
@@ -40,3 +40,9 @@ scripts/api-audit.js
 scripts/list_pending_tasks.js
 tests/validation-sprint/
 docs/Platform-Stabilization-Plan.md 
+
+#Coordinatorlocaldata
+
+/coordinator/
+
+
