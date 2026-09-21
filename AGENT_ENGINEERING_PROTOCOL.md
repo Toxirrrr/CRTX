@@ -1,10 +1,10 @@
 # AGENT OPS PLATFORM — AGENT ENGINEERING PROTOCOL (AEP)
 
 **VERSION:** 1.0.0  
-**STATUS:** AUTHORITATIVE · PERMANENT  
+**STATUS:** CRTX ENGINEERING PROTOCOL  
 **AUTHORITY:** Master Architect  
 **CREATED:** 2026-09-10  
-**SOURCE OF TRUTH:** This file — `crtx/AGENT_ENGINEERING_PROTOCOL.md`
+**SOURCE OF TRUTH:** `docs/active/` is canonical. Protocol cannot override `docs/active/`.
 
 > **CRTX INTEGRATION:** This protocol is a mandatory extension layer inside the existing CRTX MAEP lifecycle. It does NOT replace the cycle. It adds mandatory gates within it. The canonical execution order is:
 >

@@ -21,6 +21,18 @@ export type CoordTaskStatus =
   | 'BLOCKED'
   | 'CLOSED';
 
+export type CoordChatState =
+  | 'NEW'
+  | 'ACTIVE'
+  | 'WORKING'
+  | 'WAITING'
+  | 'VALIDATING'
+  | 'BLOCKED'
+  | 'DISCONNECTED'
+  | 'STALE'
+  | 'IDLE'
+  | 'CLOSED';
+
 export type CoordIntent =
   | 'READ'
   | 'AUDIT'
@@ -48,6 +60,7 @@ export type CoordEventType =
   | 'VALIDATION_FAILED'
   | 'AGENT_HEARTBEAT'
   | 'AGENT_STALE'
+  | 'AGENT_DISCONNECTED'
   | 'DUPLICATE_TASK_DETECTED'
   | 'TASK_SWITCH_DETECTED'
   | 'ARCHITECTURE_CONFLICT'
@@ -135,6 +148,8 @@ export interface CoordChatEntry {
   chatId: string;
   /** Agent type: "antigravity" | "claude" | "opus" | "human" */
   agent: string;
+  /** Chat Lifecycle State */
+  chatState: CoordChatState;
   /** Currently active task (null if idle) */
   currentTaskId: string | null;
   phase: CoordTaskStatus | null;
@@ -198,6 +213,15 @@ export interface WorkspaceDiff {
 
 // ─── API Request/Response shapes ──────────────────────────────────────────────
 
+export interface HeartbeatRequest {
+  chatId: string;
+  agent: string;
+  taskId: string | null;
+  phase: string | null;
+  intent: string | null;
+  timestamp: string;
+}
+
 export interface ClaimTaskRequest {
   chatId: string;
   agent: string;
@@ -235,4 +259,13 @@ export interface StatusOutput {
     undeclaredChanges: number;
     staleLocks: number;
   };
+}
+
+export interface CoordinatorState {
+  version: number;
+  updatedAt: string;
+  chats: Record<string, CoordChatEntry>;
+  tasks: Record<string, CoordTask>;
+  locks: Record<string, CoordResourceLock>;
+  conflicts: Record<string, CoordConflict>;
 }

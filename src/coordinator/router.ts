@@ -30,7 +30,8 @@
 import { Router, Request, Response } from 'express';
 import {
   registerChat,
-  chatHeartbeat,
+  processHeartbeat,
+  disconnectChat,
   listChats,
   getChatEntry,
   createTask,
@@ -48,6 +49,7 @@ import {
   detectWorkspaceDiff,
   getStatus,
   markStaleOwners,
+  recoverStale,
   appendAuditEvent,
 } from './registry';
 import {
@@ -121,8 +123,23 @@ coordinatorRouter.post('/register', async (req: Request, res: Response) => {
 coordinatorRouter.post('/heartbeat', async (req: Request, res: Response) => {
   try {
     const chatId = requireString(req.body?.chatId, 'chatId');
-    await chatHeartbeat(chatId);
-    res.json({ ok: true, chatId, lastActivity: new Date().toISOString() });
+    const agent = requireString(req.body?.agent, 'agent');
+    const taskId = req.body?.taskId || null;
+    const phase = req.body?.phase || null;
+    const intent = req.body?.intent || null;
+    const timestamp = req.body?.timestamp || new Date().toISOString();
+
+    await processHeartbeat({ chatId, agent, taskId, phase, intent, timestamp });
+    res.json({ ok: true, chatId, lastActivity: timestamp });
+  } catch (e) { handleError(res, e); }
+});
+
+// POST /api/coordinator/disconnect
+coordinatorRouter.post('/disconnect', async (req: Request, res: Response) => {
+  try {
+    const chatId = requireString(req.body?.chatId, 'chatId');
+    await disconnectChat(chatId);
+    res.json({ ok: true, chatId, status: 'DISCONNECTED' });
   } catch (e) { handleError(res, e); }
 });
 
@@ -371,4 +388,14 @@ coordinatorRouter.get('/audit', async (req: Request, res: Response) => {
 
     res.json({ events, count: events.length });
   } catch (e) { handleError(res, e); }
+});
+
+coordinatorRouter.post('/chats/:chatId/recover', async (req: Request, res: Response) => {
+  try {
+    const { action } = req.body;
+    await recoverStale(req.params.chatId as string, action as 'RESUME' | 'ABORT');
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
+  }
 });

@@ -1,15 +1,12 @@
 # CRTX вЂ” Constitution & Autonomous Cycle Engineering v1
 
-> **Source of truth.** This file governs the entire CRTX runtime engine.
+> **CRTX ORCHESTRATION AND GOVERNANCE RULES.** This file defines execution lifecycle and validation gates.
 > Knowledge Hierarchy:
-> 1. CRTX Constitution
-> 2. РРЅС‚РµСЂР°РєС‚РёРІРЅР°СЏ РљР°СЂС‚Р° РџСЂРѕРµРєС‚Р° (`crtx/PROJECT_MAP.md` - РіРґРµ С‡С‚Рѕ РЅР°С…РѕРґРёС‚СЃСЏ)
-> 3. Project State & Context (`../docs/ai-context/PROJECT_STATE.md`)
-> 4. Decision Registry (`crtx/decisions/`)
-> 5. Skills (`crtx/policies/skills/`)
-> 6. Evidence (`crtx/evidence/`)
+> 1. docs/active/ (CANONICAL AI KNOWLEDGE SOURCE)
+> 2. crtx/CONSTITUTION.md (CRTX Governance / Validation / Enforcement rules)
+> 3. crtx/PROJECT_MAP.md (Project Navigation)
 > 
-> The Constitution overrules Project State. Project State overrules Decisions. Decisions overrule Skills. Skills overrule Evidence.
+> CRTX is NOT a Source of Truth for architecture. It MUST NOT override docs/active/ or Master Architect intent.
 
 ---
 
@@ -359,7 +356,7 @@ Task -> CRTX Planner -> LTCE Context Request -> Prompt Planner -> Knowledge Fabr
 
 ### Source of Truth
 
-LTCE СЏРІР»СЏРµС‚СЃСЏ РµРґРёРЅСЃС‚РІРµРЅРЅС‹Рј Source of Truth РґР»СЏ Р·РЅР°РЅРёР№ РїСЂРѕРµРєС‚Р°.
+LTCE knowledge must defer to docs/active/ (CANONICAL AI KNOWLEDGE SOURCE).
 Р’СЃРµ AI СЂР°Р±РѕС‚Р°СЋС‚ РёСЃРєР»СЋС‡РёС‚РµР»СЊРЅРѕ С‡РµСЂРµР· LTCE.
 РќРёРєР°РєРёРµ Р°РіРµРЅС‚С‹ РЅРµ С‡РёС‚Р°СЋС‚ СЂРµРїРѕР·РёС‚РѕСЂРёР№ РЅР°РїСЂСЏРјСѓСЋ.
 
@@ -573,7 +570,7 @@ Knowledge layer preserves context. Always minimize token usage, prevent duplicat
 STABILIZATION FREEZE
 ==================================================
 
-После прохождения:
+пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ:
 Build
 Typecheck
 Lint
@@ -581,15 +578,15 @@ Unit
 Integration
 E2E
 
-запрещается выполнять массовый рефакторинг ядра.
-Разрешены только:
-- исправления багов;
-- изменения, необходимые для новой функции;
+пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ.
+пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ:
+- пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ;
+- пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ;
 - security fixes;
 - performance fixes;
 - production fixes.
 
-Любой крупный архитектурный рефакторинг требует нового отдельного Engineering Cycle с новым Execution Plan.
+пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ Engineering Cycle пїЅ пїЅпїЅпїЅпїЅпїЅ Execution Plan.
 
 
 ==================================================
@@ -617,7 +614,7 @@ Before starting any task:
 - Read Prisma schema
 - Read existing RBAC policies
 - Read Release Freeze rules
-- Read PROJECT_STATE and DEFINITION_OF_DONE
+- Read docs/active/ for canonical architectural state
 
 Never invent architecture. Never create new patterns.
 Work only within the existing system.
@@ -701,6 +698,13 @@ Before starting implementation, verify:
 - No Prisma Schema violations
 
 If any violation found: return to Cycle Planning.
+If UNKNOWN discovered:
+  - STOP. DO NOT GUESS.
+  - DO NOT IMPLEMENT.
+  - QUESTION MASTER ARCHITECT.
+  - WAIT FOR DECISION.
+  - UPDATE docs/active/
+  - RESUME.
 
 ---
 
@@ -755,7 +759,9 @@ After all Cycles complete, verify:
 - No console.log
 - No temporary code
 - No Feature Drift
-- No architectural violations
+- No architectural violations.
+- If CODE TRUTH != MASTER ARCHITECT INTENT: STATUS = VIOLATION.
+- CRTX MUST block invalid closure. DO NOT rewrite docs to match code.
 
 ---
 

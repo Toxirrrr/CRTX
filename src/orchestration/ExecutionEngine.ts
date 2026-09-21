@@ -10,6 +10,9 @@ import { ContextAllocator } from './ContextAllocator';
 import { TaskFingerprint } from '../token/TaskFingerprint';
 import { ResultCache } from '../token/ResultCache';
 
+import { PolicyResolver } from './PolicyResolver';
+import { GovernanceGate } from './GovernanceGate';
+
 /**
  * P1: Execution Engine
  * Glues together ContextAllocator (Rollback), ValidationPipeline, Auto QA, and Recovery.
@@ -73,8 +76,90 @@ export class ExecutionEngine implements IExecutionEngine {
         }
       }
 
-      // 1. Snapshot / Setup Context (Stub files list for P1)
-      ctx.snapshotId = await this.allocator.createSnapshot(taskId, []);
+      // 1. Governance Gate Check
+      const docsDir = require('path').resolve(__dirname, '../../../docs/active');
+      const resolver = new PolicyResolver(docsDir);
+      const records = resolver.resolve();
+      const governanceGate = new GovernanceGate(records);
+
+      const files = payload?.files || [];
+      const taskType = payload?.type;
+      const engineeringCycleId = payload?.engineeringCycleId;
+      
+      // PROJECT ROOT CONTAINMENT CHECK
+      const path = require('path');
+      const fs = require('fs');
+      const projectRoot = path.resolve(__dirname, '../../..');
+      const rootPrefix = projectRoot + path.sep;
+
+      const normalizedFiles: string[] = [];
+      for (const file of files) {
+        const absolutePath = path.resolve(projectRoot, file);
+        
+        // 1. Lexical prefix collision & normalized boundary check
+        if (!absolutePath.startsWith(rootPrefix) && absolutePath !== projectRoot) {
+          throw new Error(`GOVERNANCE_BLOCKED: Path escapes project root: ${file}`);
+        }
+        
+        // 2. Symlink boundary check
+        try {
+          const real = fs.realpathSync(absolutePath);
+          if (!real.startsWith(rootPrefix) && real !== projectRoot) {
+            throw new Error(`GOVERNANCE_BLOCKED: Path escapes project root via symlink: ${file}`);
+          }
+          // Normalize to canonical relative path for GovernanceGate
+          normalizedFiles.push(path.relative(projectRoot, real).replace(/\\/g, '/'));
+        } catch (e: any) {
+          // If file doesn't exist yet, verify its closest existing parent
+          if (e.code === 'ENOENT') {
+            let current = absolutePath;
+            let parent = path.dirname(current);
+            while (current !== parent) {
+              try {
+                const realParent = fs.realpathSync(parent);
+                if (!realParent.startsWith(rootPrefix) && realParent !== projectRoot) {
+                  throw new Error(`GOVERNANCE_BLOCKED: Path escapes project root via parent symlink: ${file}`);
+                }
+                break; // Found nearest existing parent safely inside project root
+              } catch (err: any) {
+                if (err.code === 'ENOENT') {
+                  current = parent;
+                  parent = path.dirname(current);
+                } else {
+                  throw err; // Other fs errors (e.g. EACCES) block execution for safety
+                }
+              }
+            }
+            // Normalize to canonical relative path for GovernanceGate
+            normalizedFiles.push(path.relative(projectRoot, absolutePath).replace(/\\/g, '/'));
+          } else {
+            throw new Error(`GOVERNANCE_BLOCKED: FS error checking containment for ${file}: ${e.message}`);
+          }
+        }
+      }
+
+      if (!taskType) {
+        throw new Error(`GOVERNANCE_BLOCKED: Missing task type.`);
+      }
+
+      const allowedTaskTypes = ['FEATURE', 'REMEDIATION', 'BUGFIX', 'SECURITY_FIX', 'PERFORMANCE', 'HOTFIX'];
+      if (!allowedTaskTypes.includes(taskType.toUpperCase())) {
+        throw new Error(`GOVERNANCE_BLOCKED: Invalid task type: ${taskType}`);
+      }
+      
+      if (engineeringCycleId && typeof engineeringCycleId !== 'string') {
+        throw new Error(`GOVERNANCE_BLOCKED: Invalid engineeringCycleId.`);
+      }
+
+      const govResult = governanceGate.check(normalizedFiles, taskType, engineeringCycleId);
+      if (!govResult.passed) {
+        const reasons = govResult.blockingRecords.map(r => `[${r.id}] ${r.status}`).join(', ');
+        const message = reasons ? `GOVERNANCE_BLOCKED: ${reasons}` : `GOVERNANCE_BLOCKED: ${govResult.reason}`;
+        throw new Error(message);
+      }
+
+      // 1.5 Snapshot / Setup Context
+      ctx.snapshotId = await this.allocator.createSnapshot(taskId, normalizedFiles);
       ctx.state = ExecutionState.RUNNING;
 
       // 2. Here the external Agent performs work...

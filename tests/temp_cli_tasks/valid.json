@@ -1,0 +1,6 @@
+{
+  "type": "BUGFIX",
+  "files": [
+    "crtx/package.json"
+  ]
+}

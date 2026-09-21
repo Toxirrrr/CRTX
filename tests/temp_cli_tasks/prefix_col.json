@@ -1,0 +1,6 @@
+{
+  "type": "BUGFIX",
+  "files": [
+    "../REAL-malicious/file.txt"
+  ]
+}

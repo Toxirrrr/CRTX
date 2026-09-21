@@ -1,0 +1,6 @@
+{
+  "type": "BUGFIX",
+  "files": [
+    "../../../../Windows/System32/cmd.exe"
+  ]
+}
