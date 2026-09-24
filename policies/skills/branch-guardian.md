@@ -32,10 +32,11 @@ git log -n 3 --oneline
 - Understand the context of the current branch. Is it a feature branch? A cycle branch? 
 
 ### Check C: CRTX Coordinator Locks & Stale Tasks
+Check the local `state.json` file directly (do NOT rely on the API because the CRTX server might not be running).
 ```bash
-curl -X POST http://localhost:4100/api/coordinator/stale
+cat crtx/coordinator/state.json
 ```
-- If the CRTX server reports any stale chats (abandoned sessions with orphaned locks), or if the current branch has an open task, **STOP**.
+- Look at the `chats` and `tasks` objects in the JSON. If there is an orphaned chat (e.g. `chatState: "STALE"` or `chatState: "ACTIVE"` but from an old date) or if the current branch matches an open task (`phase: "IN_PROGRESS"`), **STOP**.
 - You must report: "⚠️ ОБНАРУЖЕНА НЕЗАКРЫТАЯ ИЛИ УСТАРЕВШАЯ ЗАДАЧА В CRTX."
 
 ## 3. Resolution Protocol
@@ -44,17 +45,17 @@ If any of the detection checks find abandoned work, you MUST NOT start new work.
 
 **Option 1: Продолжить (Continue / RESUME)**
 - "Хотите, чтобы я завершил эту работу, протестировал и закоммитил изменения, закрыв задачу в CRTX?"
-- If user says yes: Call the CRTX recover endpoint with action="RESUME", finish the implementation, validate, commit, and release the CRTX lock.
+- If user says yes: Finish the implementation, validate, commit. To release the CRTX lock, you MUST start the CRTX server (`npm run dev` in `/crtx`), wait for it to be ready, and then call:
 ```bash
-curl -X POST http://localhost:4100/api/coordinator/chats/YOUR_CHAT_ID/recover \
+curl -X POST http://localhost:4100/api/coordinator/tasks/YOUR_TASK_ID/release \
   -H "Content-Type: application/json" \
-  -d '{"action": "RESUME"}'
+  -d '{"chatId": "YOUR_CONVERSATION_ID", "phase": "CLOSED"}'
 ```
 
 **Option 2: Отменить (Abort/Revert)**
 - "Хотите, чтобы я откатил эти изменения (`git reset --hard && git clean -fd`) и освободил CRTX лок, чтобы начать с чистого листа?"
 - **CRITICAL**: You MUST NOT execute `git reset`, `git clean`, or any other destructive command unless the user explicitly types "yes", "revert", or "отменить".
-- If user gives explicit permission: Revert the tree and notify the CRTX Coordinator to cancel the task by calling the recover endpoint with action="ABORT".
+- If user gives explicit permission: Revert the tree. To notify the CRTX Coordinator to cancel the task, start the CRTX server (`npm run dev` in `/crtx`), wait for it to be ready, and then call:
 ```bash
 curl -X POST http://localhost:4100/api/coordinator/chats/YOUR_CHAT_ID/recover \
   -H "Content-Type: application/json" \
