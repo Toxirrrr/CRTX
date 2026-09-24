@@ -32,11 +32,11 @@ git log -n 3 --oneline
 - Understand the context of the current branch. Is it a feature branch? A cycle branch? 
 
 ### Check C: CRTX Coordinator Locks & Stale Tasks
-Check the local `state.json` file directly (do NOT rely on the API because the CRTX server might not be running).
+Run the CRTX CLI tool to check for stale or orphaned locks.
 ```bash
-cat crtx/coordinator/state.json
+cd crtx && npm run guardian
 ```
-- Look at the `chats` and `tasks` objects in the JSON. If there is an orphaned chat (e.g. `chatState: "STALE"` or `chatState: "ACTIVE"` but from an old date) or if the current branch matches an open task (`phase: "IN_PROGRESS"`), **STOP**.
+- If the tool reports stale tasks or orphaned locks, **STOP**.
 - You must report: "⚠️ ОБНАРУЖЕНА НЕЗАКРЫТАЯ ИЛИ УСТАРЕВШАЯ ЗАДАЧА В CRTX."
 
 ## 3. Resolution Protocol
@@ -45,25 +45,15 @@ If any of the detection checks find abandoned work, you MUST NOT start new work.
 
 **Option 1: Продолжить (Continue / RESUME)**
 - "Хотите, чтобы я завершил эту работу, протестировал и закоммитил изменения, закрыв задачу в CRTX?"
-- If user says yes: Finish the implementation, validate, commit. To release the CRTX lock, you MUST start the CRTX server (`npm run dev` in `/crtx`), wait for it to be ready, and then call:
-```bash
-curl -X POST http://localhost:4100/api/coordinator/tasks/YOUR_TASK_ID/release \
-  -H "Content-Type: application/json" \
-  -d '{"chatId": "YOUR_CONVERSATION_ID", "phase": "CLOSED"}'
-```
+- If user says yes: Run `npm run guardian -- resume YOUR_CHAT_ID` inside `/crtx`, then finish the implementation, validate, and commit.
 
 **Option 2: Отменить (Abort/Revert)**
 - "Хотите, чтобы я откатил эти изменения (`git reset --hard && git clean -fd`) и освободил CRTX лок, чтобы начать с чистого листа?"
 - **CRITICAL**: You MUST NOT execute `git reset`, `git clean`, or any other destructive command unless the user explicitly types "yes", "revert", or "отменить".
-- If user gives explicit permission: Revert the tree. To notify the CRTX Coordinator to cancel the task, start the CRTX server (`npm run dev` in `/crtx`), wait for it to be ready, and then call:
-```bash
-curl -X POST http://localhost:4100/api/coordinator/chats/YOUR_CHAT_ID/recover \
-  -H "Content-Type: application/json" \
-  -d '{"action": "ABORT"}'
-```
+- If user gives explicit permission: Revert the tree. To cancel the CRTX lock, run `npm run guardian -- abort YOUR_CHAT_ID` inside `/crtx`.
 
 **Option 3: Оставить как есть (Leave & Ignore)**
 - If the user explicitly says to ignore it (because another agent is actively working on it in another chat), you must NOT touch the files.
 
 ## 4. Agent Mandate
-Never ignore a dirty tree. If you forgot your previous work, this skill acts as your memory. If another AI died mid-task, this skill acts as the cleanup crew, directly integrating with CRTX's stale detection mechanism.
+Never ignore a dirty tree. If you forgot your previous work, this skill acts as your memory. If another AI died mid-task, this skill acts as the cleanup crew, directly integrating with CRTX's CLI guardian.

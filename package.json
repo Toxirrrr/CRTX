@@ -10,6 +10,7 @@
     "start": "node dist/server.js",
     "dev": "ts-node src/server.ts",
     "route": "ts-node src/cli/route.ts",
+    "guardian": "ts-node src/cli/guardian.ts",
     "test": "npx ts-node tests/test_token.ts && npx ts-node tests/test_rag.ts && npx ts-node tests/test_runtime.ts && npx ts-node tests/test_orchestration.ts",
     "test:runtime": "ts-node tests/test_runtime.ts",
     "test:rag": "ts-node tests/test_rag.ts",
@@ -20,10 +21,15 @@
     "demo": "node scripts/demo.js"
   },
   "dependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@types/minimatch": "^5.1.2",
     "@xenova/transformers": "^2.0.1",
     "axios": "^1.18.0",
     "cors": "^2.8.5",
     "express": "^4.21.2",
+    "js-yaml": "^5.4.2",
+    "minimatch": "^10.2.6",
+    "playwright": "^1.63.0",
     "vectra": "^0.15.0"
   },
   "devDependencies": {
