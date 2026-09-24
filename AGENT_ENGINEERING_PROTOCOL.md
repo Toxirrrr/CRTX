@@ -622,7 +622,14 @@ These phrases may appear in risk assessments. They must **never** be the reason 
 
 **Executes in:** FINAL AUDIT phase.
 
+Before handing off, the AI MUST mathematically prove the code is not broken.
+1. **Syntax & Build Check:** Run `npm run build` (or equivalent compiler check). Do NOT hand off code that does not compile.
+2. **Orphan Code Check:** Ensure no fragmented code was left behind during deletions (e.g., hanging braces, missing imports, broken scope).
+3. **Linting Check:** Run `npm run lint` to catch syntax or scope errors.
+
 ```
+[ ] Syntax & Build successfully completed (NO compiler errors)
+[ ] Orphan Code Check passed (No fragmented/broken deletions)
 [ ] Scope respected (no scope expansion)
 [ ] Architecture respected (no new patterns invented)
 [ ] Code Truth verified (code matches report)

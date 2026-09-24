@@ -73,6 +73,7 @@ Inspect all files changed by the commits being pushed.
 Check:
 
 * syntax;
+* orphan code (no hanging braces or broken scope from deletions);
 * imports;
 * types;
 * logic;
