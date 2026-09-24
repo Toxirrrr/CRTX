@@ -458,6 +458,13 @@ org:{orgId}:driver:{driverId}:status
 
 **Implementation is COMPLETE only when every contract item is fulfilled.**
 
+### 14.1 Task Division & Swarm Delegation (1+2+3 Protocol)
+If the task spans multiple domains (e.g. Frontend Component and Backend API), you MUST decompose it into CRTX subtasks and delegate to subagents using the 1+2+3 Protocol:
+1. Register subtasks in CRTX (`POST /api/coordinator/tasks`).
+2. Invoke Antigravity subagents in parallel (`Workspace: "share"`).
+3. Route based on complexity (`pro` vs `flash`).
+**Do not execute independent subtasks sequentially.**
+
 ---
 
 ## 15. GATE 6 — MINIMAL IMPLEMENTATION
