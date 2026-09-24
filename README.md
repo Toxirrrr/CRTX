@@ -50,6 +50,7 @@ To coordinate this without losing context, CRTX relies on a structured filesyste
 - **Provider Independence**: Seamlessly hand off a task from Claude to a Local LLaMA mid-workflow.
 - **Verifiable Execution**: Code is only considered complete when cryptographic `Evidence` is generated.
 - **IDE Agnostic**: Works perfectly alongside Cursor, Windsurf, Copilot, or CLI agents like Aider.
+- **Active Workspace Guardian**: Built-in CLI (`npm run guardian`) to detect, resume, or abort abandoned AI work (stale tasks) safely offline.
 
 ---
 

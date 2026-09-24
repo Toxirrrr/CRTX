@@ -111,7 +111,16 @@ No gate may be silently skipped. If a gate is not applicable, it must be explici
 
 **Executes in:** READ-ONLY DISCOVERY phase, before any file read or command.
 
-Define and freeze the scope in writing:
+### 4.0 Workspace & Branch Health Check (Branch Guardian)
+Before locking scope, you **MUST** ensure the branch is clean and not abandoned by a previous agent crash.
+Run:
+```bash
+cd crtx && npm run guardian
+```
+- If the tool reports stale tasks, you must ask the user whether to RESUME or ABORT.
+- Do not proceed until the workspace is free of orphaned CRTX locks or dirty uncommitted changes.
+
+### 4.1 Define and freeze the scope in writing:
 
 ```
 Task:
