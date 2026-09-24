@@ -31,37 +31,37 @@ git log -n 3 --oneline
 ```
 - Understand the context of the current branch. Is it a feature branch? A cycle branch? 
 
-### Check C: CRTX Coordinator Locks
+### Check C: CRTX Coordinator Locks & Stale Tasks
 ```bash
-curl -s http://localhost:4100/api/coordinator/tasks | grep "status"
+curl -X POST http://localhost:4100/api/coordinator/stale
 ```
-*(Query the local CRTX state to see if the current branch/task is locked by an agent).*
-- If there is an open task that matches the current branch, **STOP**.
-- You must report: "⚠️ ОБНАРУЖЕНА НЕЗАКРЫТАЯ ЗАДАЧА В CRTX (ORPHANED LOCK)."
+- If the CRTX server reports any stale chats (abandoned sessions with orphaned locks), or if the current branch has an open task, **STOP**.
+- You must report: "⚠️ ОБНАРУЖЕНА НЕЗАКРЫТАЯ ИЛИ УСТАРЕВШАЯ ЗАДАЧА В CRTX."
 
 ## 3. Resolution Protocol
 
 If any of the detection checks find abandoned work, you MUST NOT start new work. Instead, prompt the user with a decision matrix:
 
-**Option 1: Продолжить (Continue)**
+**Option 1: Продолжить (Continue / RESUME)**
 - "Хотите, чтобы я завершил эту работу, протестировал и закоммитил изменения, закрыв задачу в CRTX?"
-- If user says yes: Claim the task (or take over), finish the implementation, validate, commit, and release the CRTX lock.
+- If user says yes: Call the CRTX recover endpoint with action="RESUME", finish the implementation, validate, commit, and release the CRTX lock.
+```bash
+curl -X POST http://localhost:4100/api/coordinator/chats/YOUR_CHAT_ID/recover \
+  -H "Content-Type: application/json" \
+  -d '{"action": "RESUME"}'
+```
 
 **Option 2: Отменить (Abort/Revert)**
 - "Хотите, чтобы я откатил эти изменения (`git reset --hard && git clean -fd`) и освободил CRTX лок, чтобы начать с чистого листа?"
-- If user says yes: Revert the tree and notify the CRTX Coordinator to cancel the task.
+- If user says yes: Revert the tree and notify the CRTX Coordinator to cancel the task by calling the recover endpoint with action="ABORT".
+```bash
+curl -X POST http://localhost:4100/api/coordinator/chats/YOUR_CHAT_ID/recover \
+  -H "Content-Type: application/json" \
+  -d '{"action": "ABORT"}'
+```
 
 **Option 3: Оставить как есть (Leave & Ignore)**
 - If the user explicitly says to ignore it (because another agent is actively working on it in another chat), you must NOT touch the files.
 
-## 4. CRTX Integration
-Whenever you finish continuing an abandoned task, or if you abort it, you MUST update the CRTX coordinator:
-```bash
-# To close/release:
-curl -X POST http://localhost:4100/api/coordinator/tasks/YOUR_TASK_ID/release \
-  -H "Content-Type: application/json" \
-  -d '{"chatId": "YOUR_CONVERSATION_ID", "phase": "CLOSED"}'
-```
-
-## 5. Agent Mandate
-Never ignore a dirty tree. If you forgot your previous work, this skill acts as your memory. If another AI died mid-task, this skill acts as the cleanup crew.
+## 4. Agent Mandate
+Never ignore a dirty tree. If you forgot your previous work, this skill acts as your memory. If another AI died mid-task, this skill acts as the cleanup crew, directly integrating with CRTX's stale detection mechanism.
