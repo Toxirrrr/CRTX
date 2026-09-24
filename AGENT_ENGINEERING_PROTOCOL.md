@@ -77,33 +77,34 @@ FINAL AUDIT                         GATE 7 — NEGATIVE TESTING
 
 ---
 
-## 3. GATE PIPELINE OVERVIEW
+## 3. DYNAMIC GATE ROUTING & PIPELINE OVERVIEW
 
+To optimize AI performance and avoid bureaucratic overhead, the pipeline is dynamically routed based on task risk. Upon task assignment (in GATE 0), the AI must classify the task into one of three tracks and follow its optimized pipeline.
+
+### 🟢 Track L1: Fast-Track (Low Risk)
+**Applies to:** UI/UX changes, CSS, text modifications, isolated frontend components, pure aesthetic fixes.
+**Required Gates:** (3 steps)
 ```
-GATE 0  — SCOPE LOCK
-    ↓
-GATE 1  — READ-ONLY RECON
-    ↓
-GATE 2  — ACTUAL EXECUTION PATH
-    ↓
-GATE 3  — ROOT CAUSE
-    ↓
-GATE 4  — FAILURE MODE MAP            <- MANDATORY; never silently skip
-    ↓
-GATE 5  — ACCEPTANCE CONTRACT
-    ↓
-GATE 6  — MINIMAL IMPLEMENTATION
-    ↓
-GATE 7  — NEGATIVE TESTING
-    ↓
-GATE 8  — ADVERSARIAL SELF-REVIEW
-    ↓
-GATE 9  — FINAL EVIDENCE AUDIT
-    ↓
-GATE 10 — HANDOFF TO MASTER ARCHITECT
+GATE 0 (Scope) -> GATE 6 (Implementation) -> GATE 10 (Handoff)
+```
+*(All other gates are implicitly marked N/A)*
+
+### 🟡 Track L2: Standard (Medium Risk)
+**Applies to:** Standard feature development, new CRUD endpoints, standard controllers, isolated business logic.
+**Required Gates:** (7 steps)
+```
+GATE 0 (Scope) -> GATE 1 (Recon) -> GATE 3 (Root Cause) -> GATE 5 (Contract) -> GATE 6 (Implementation) -> GATE 9 (Final Evidence) -> GATE 10 (Handoff)
+```
+*(Gates 2, 4, 7, 8 are skipped unless the agent discovers unexpected complexity during Recon)*
+
+### 🔴 Track L3: Deep Core (Critical Risk)
+**Applies to:** DB Schema (Prisma), Auth, Tenant Isolation, Core Architecture, WebSockets, BullMQ Queues, Infrastructure.
+**Required Gates:** (All 11 steps)
+```
+GATE 0 (Scope) -> GATE 1 (Recon) -> GATE 2 (Execution Path) -> GATE 3 (Root Cause) -> GATE 4 (Failure Mode Map) -> GATE 5 (Contract) -> GATE 6 (Implementation) -> GATE 7 (Negative Testing) -> GATE 8 (Adversarial Review) -> GATE 9 (Evidence) -> GATE 10 (Handoff)
 ```
 
-No gate may be silently skipped. If a gate is not applicable, it must be explicitly marked `N/A — REASON: [...]`.
+No required gate may be silently skipped within its assigned track. If a required gate is not applicable, it must be explicitly marked `N/A — REASON: [...]`.
 
 ---
 
@@ -125,6 +126,7 @@ cd crtx && npm run guardian
 ```
 Task:
 Goal:
+Dynamic Track: L1 (Fast) / L2 (Standard) / L3 (Core) - Reason:
 In Scope:
 Out of Scope:
 Allowed files to modify:
@@ -678,6 +680,7 @@ Every completed task must produce this report. No exceptions.
 
 TASK:
 GOAL:
+TRACK: L1 / L2 / L3
 
 SCOPE:
   IN SCOPE:
