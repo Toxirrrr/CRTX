@@ -53,7 +53,8 @@ curl -X POST http://localhost:4100/api/coordinator/chats/YOUR_CHAT_ID/recover \
 
 **Option 2: Отменить (Abort/Revert)**
 - "Хотите, чтобы я откатил эти изменения (`git reset --hard && git clean -fd`) и освободил CRTX лок, чтобы начать с чистого листа?"
-- If user says yes: Revert the tree and notify the CRTX Coordinator to cancel the task by calling the recover endpoint with action="ABORT".
+- **CRITICAL**: You MUST NOT execute `git reset`, `git clean`, or any other destructive command unless the user explicitly types "yes", "revert", or "отменить".
+- If user gives explicit permission: Revert the tree and notify the CRTX Coordinator to cancel the task by calling the recover endpoint with action="ABORT".
 ```bash
 curl -X POST http://localhost:4100/api/coordinator/chats/YOUR_CHAT_ID/recover \
   -H "Content-Type: application/json" \
