@@ -8,9 +8,14 @@
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "start": "node dist/server.js",
+    "ws": "node dist/ws-daemon.js",
     "dev": "ts-node src/server.ts",
     "route": "ts-node src/cli/route.ts",
     "guardian": "ts-node src/cli/guardian.ts",
+    "docs:sync": "node dist/cli/doc-writer.js sync",
+    "docs:verify": "node dist/cli/doc-writer.js verify-drift",
+    "context": "node dist/cli/context.js",
+    "memory": "node dist/cli/memory.js",
     "test": "npx ts-node tests/test_token.ts && npx ts-node tests/test_rag.ts && npx ts-node tests/test_runtime.ts && npx ts-node tests/test_orchestration.ts",
     "test:runtime": "ts-node tests/test_runtime.ts",
     "test:rag": "ts-node tests/test_rag.ts",
@@ -23,6 +28,7 @@
   "dependencies": {
     "@types/js-yaml": "^4.0.9",
     "@types/minimatch": "^5.1.2",
+    "@types/ws": "^8.18.2",
     "@xenova/transformers": "^2.0.1",
     "axios": "^1.18.0",
     "cors": "^2.8.5",
@@ -30,7 +36,8 @@
     "js-yaml": "^5.4.2",
     "minimatch": "^10.2.6",
     "playwright": "^1.63.0",
-    "vectra": "^0.15.0"
+    "vectra": "^0.15.0",
+    "ws": "^8.22.0"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",

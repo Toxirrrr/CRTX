@@ -20,6 +20,7 @@ import * as fs from 'fs';
 import fsp from 'node:fs/promises';
 import * as path from 'path';
 import { RuntimeAdapter, RuntimeHealth, RuntimeResult, Task } from '../RuntimeAdapter';
+import { spawn } from 'node:child_process';
 
 const MEMORY_DIR = path.resolve(process.cwd(), 'memory');
 

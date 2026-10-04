@@ -261,6 +261,37 @@ export interface StatusOutput {
   };
 }
 
+export interface CoordPeerMessage {
+  id: string;
+  from: string;
+  to: string;
+  text: string;
+  timestamp: string;
+}
+
+export interface CoordFileLock {
+  file: string;
+  agent: string;
+  priority: number;
+  reason: string;
+  acquiredAt: string;
+  expiresAt: number;
+  ttlSeconds: number;
+  lineStart?: number;
+  lineEnd?: number;
+}
+
+export interface AgentRoleConfig {
+  agent: string;
+  role: 'MANAGER' | 'WORKER' | 'PLATFORM' | 'CODE_REVIEWER' | 'SUPERVISOR' | 'ANALYZER';
+  priority: number;
+  status: 'ONLINE' | 'OFFLINE' | 'BUSY' | 'IDLE';
+  currentAction: string;
+  activeFiles: string[];
+  lastSeen: string;
+  model?: string;
+}
+
 export interface CoordinatorState {
   version: number;
   updatedAt: string;
@@ -268,4 +299,16 @@ export interface CoordinatorState {
   tasks: Record<string, CoordTask>;
   locks: Record<string, CoordResourceLock>;
   conflicts: Record<string, CoordConflict>;
+  fileLocks?: Record<string, CoordFileLock>;
+  messages?: CoordPeerMessage[];
+  agentRoles?: Record<string, AgentRoleConfig>;
+  automatic?: AutomaticCoordination;
 }
+
+export type AutomaticRole = 'WRITER' | 'REVIEWER' | 'QA' | 'RESERVE';
+export interface AutomaticAgent { id: string; tokenHash: string; capabilities: string[]; roles: AutomaticRole[]; canManage: boolean; leaseUntil: number; credits: 'AVAILABLE' | 'EXHAUSTED'; model: string; }
+export interface AutomaticWork { acknowledgedAt?: number; startedAt?: number; progressAt?: number; taskId: string; capabilities: string[]; role: AutomaticRole; reviewOf?: string; authorId?: string; ownerId: string | null; phase: 'QUEUED' | 'OFFERED' | 'ACKNOWLEDGED' | 'RUNNING' | 'BLOCKED' | 'COMPLETED' | 'ACCEPTED'; leaseUntil: number; assignmentId: string; notes: string; evidence: string[]; }
+export interface AutomaticCoordination { direct?: { [messageId: string]: AutomaticDirectMessage }; agents: { [id: string]: AutomaticAgent }; work: { [taskId: string]: AutomaticWork }; managerId: string | null; managerUntil: number; epoch: number; }
+export interface AutomaticDirectMessage { preflight?: { skillPath: string; sha256: string; status: 'PASSED' }; messageId: string; recipientId: string; prompt: string; status: 'QUEUED' | 'CLAIMED' | 'STARTED' | 'COMPLETED' | 'BLOCKED'; runId: string; leaseUntil: number; createdAt: number; startedAt?: number; progressAt?: number; output: string; blocker?: 'AUTH' | 'CREDITS' | 'NETWORK' | 'MODEL_CRASH' | 'TIMEOUT' | 'NO_ADAPTER' | 'SHUTDOWN'; }
+export interface AutomaticRequest { scope?: CoordScope; action: 'REGISTER' | 'HEARTBEAT' | 'ENQUEUE' | 'ACK' | 'START' | 'PROGRESS' | 'BLOCK' | 'COMPLETE' | 'ACCEPT' | 'HANDOFF'; agentId: string; token: string; epoch?: number; taskId?: string; assignmentId?: string; capabilities?: string[]; role?: AutomaticRole; reviewOf?: string; targetAgentId?: string; notes?: string; evidence?: string[]; credits?: 'AVAILABLE' | 'EXHAUSTED'; model?: string; }
+export interface AutomaticSnapshot { managerId: string | null; epoch: number; role: AutomaticRole | 'MANAGER'; assignments: AutomaticWork[]; execution: 'TRANSPORT_ONLY_NO_MODEL_ADAPTER'; }

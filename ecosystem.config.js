@@ -6,7 +6,7 @@
 //   pm2 startup              # (run the printed command once, as admin)
 module.exports = {
   apps: [
-    // ── Main server ──────────────────────────────────────────────────────────
+    // 🎛️ Main server 🎛️🎛️🎛️🎛️🎛️🎛️🎛️🎛️🎛️🎛️🎛️🎛️🎛️🎛️🎛️🎛️🎛️🎛️🎛️🎛️🎛️🎛️🎛️🎛️🎛️🎛️🎛️🎛️🎛️🎛️🎛️🎛️🎛️🎛️🎛️🎛️🎛️🎛️🎛️🎛️🎛️🎛️🎛️🎛️🎛️
     {
       name: 'agent-orchestrator',
       script: 'dist/server.js',
@@ -22,36 +22,14 @@ module.exports = {
       },
     },
 
-    // ── Heartbeat daemons ────────────────────────────────────────────────────
+    // 💓 Heartbeat daemons 💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓
     // Each agent session that is actively running should have its heartbeat
     // daemon running alongside. When an agent session ends, stop its daemon
-    // (pm2 stop heartbeat:claude) so the watchdog knows it went offline.
-    //
-    // Starting all three by default: if an agent is not active its tasks
-    // won't be dispatched to it (capacity>activeTasks check in watchdog).
-    // To disable an agent: pm2 stop heartbeat:<name>
+    // (pm2 stop heartbeat:codex) so the watchdog knows it went offline.
     {
-      name: 'heartbeat:claude',
+      name: 'heartbeat:agy',
       script: 'dist/agents/heartbeat-client.js',
-      args: '--agent claude --capacity 2',
-      cwd: __dirname,
-      exec_mode: 'fork',
-      instances: 1,
-      watch: false,
-      autorestart: true,
-      max_restarts: 10,
-      min_uptime: '5s',
-      env: {
-        NODE_ENV: 'production',
-        TZ: 'Asia/Tashkent',
-        // ORCHESTRATOR_URL: 'http://localhost:4100',  // default
-        // ORCHESTRATOR_API_KEY: '',                   // set if auth enabled
-      },
-    },
-    {
-      name: 'heartbeat:antigravity',
-      script: 'dist/agents/heartbeat-client.js',
-      args: '--agent antigravity --capacity 3',
+      args: '--agent agy --capacity 3',
       cwd: __dirname,
       exec_mode: 'fork',
       instances: 1,
@@ -65,9 +43,9 @@ module.exports = {
       },
     },
     {
-      name: 'heartbeat:opus',
+      name: 'heartbeat:codex',
       script: 'dist/agents/heartbeat-client.js',
-      args: '--agent opus --capacity 1',
+      args: '--agent codex --capacity 3',
       cwd: __dirname,
       exec_mode: 'fork',
       instances: 1,
@@ -80,11 +58,12 @@ module.exports = {
         TZ: 'Asia/Tashkent',
       },
     },
-    // ── Event-Driven Listeners (Zero-Waste) ──────────────────────────────────
+
+    // 🎧 Event-Driven Listeners (Zero-Waste) 🎧🎧🎧🎧🎧🎧🎧🎧🎧🎧🎧🎧🎧🎧🎧🎧🎧🎧🎧🎧🎧🎧🎧🎧🎧🎧🎧🎧🎧🎧🎧🎧🎧
     {
-      name: 'listen:claude',
+      name: 'listen:agy',
       script: 'dist/agents/listen-for-work.js',
-      args: 'claude',
+      args: 'agy',
       cwd: __dirname,
       exec_mode: 'fork',
       instances: 1,
@@ -93,9 +72,9 @@ module.exports = {
       max_restarts: 10,
     },
     {
-      name: 'listen:antigravity',
+      name: 'listen:codex',
       script: 'dist/agents/listen-for-work.js',
-      args: 'antigravity',
+      args: 'codex',
       cwd: __dirname,
       exec_mode: 'fork',
       instances: 1,

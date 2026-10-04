@@ -1,4 +1,4 @@
-﻿node_modules/
+node_modules/
 dist/
 .env
 .env.local
@@ -44,5 +44,19 @@ docs/Platform-Stabilization-Plan.md
 #Coordinatorlocaldata
 
 /coordinator/
+
+# ChatGPT browser integration — NEVER commit session/auth data
+# Browser profile contains cookies and session state
+.crtx/browser/
+# Chat/project mappings contain personal ChatGPT URLs
+memory/chatgpt_mapping.json
+debug_playwright.js
+debug_auth.js
+debug_auth2.js
+debug_auth3.js
+debug_goto.js
+test_selector.js
+package-lock.json
+upgrade.md
 
 

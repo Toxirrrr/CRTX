@@ -6,8 +6,10 @@ import {
   CoordTask, CoordResourceLock, CoordChatEntry, CoordConflict,
   CoordAuditEvent, CoordEventType, CoordTaskStatus, CoordScope,
   CoordIntent, CoordValidationEvidence, CoordHandoff,
-  WorkspaceDiff, StatusOutput, ConflictType, CoordinatorState, ClaimTaskConflict, HeartbeatRequest
+  WorkspaceDiff, StatusOutput, ConflictType, CoordinatorState, ClaimTaskConflict, HeartbeatRequest,
+  CoordPeerMessage, CoordFileLock, AgentRoleConfig
 } from './types';
+import { AutomaticCoordination, AutomaticRequest, AutomaticSnapshot, AutomaticRole, AutomaticDirectMessage } from './types';
 
 const CRTX_ROOT = path.resolve(__dirname, '..', '..');
 const COORD_DIR = process.env.CRTX_COORDINATOR_TEST_ROOT || path.join(CRTX_ROOT, 'coordinator');
@@ -16,6 +18,217 @@ const EVENTS_FILE = path.join(COORD_DIR, 'events.jsonl');
 const LOCK_FILE = path.join(COORD_DIR, 'coordinator.lock');
 
 const STALE_THRESHOLD_MS = 15 * 60 * 1000;
+
+const AUTOMATIC_LEASE_MS = 60_000;
+const AUTOMATIC_ROLES: AutomaticRole[] = ['WRITER', 'REVIEWER', 'QA', 'RESERVE'];
+
+function automaticState(state: CoordinatorState): AutomaticCoordination {
+  return state.automatic ??= { agents: {}, work: {}, managerId: null, managerUntil: 0, epoch: 0 };
+}
+
+export async function isAutomaticAgent(id: string): Promise<boolean> {
+  return readOnly(state => Boolean(state.automatic?.agents[id]));
+}
+
+function checkedId(id: string): void {
+  if (typeof id !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9_-]{0,95}$/.test(id)) throw new Error('Invalid stable identifier');
+}
+
+function checkedCapabilities(capabilities: string[]): void {
+  if (!Array.isArray(capabilities) || capabilities.length > 32 || capabilities.some(capability => typeof capability !== 'string' || !/^[a-z][a-z0-9:-]{0,63}$/.test(capability))) throw new Error('Invalid bounded capabilities');
+}
+
+function authenticateAutomatic(state: CoordinatorState, agentId: string, token: string): void {
+  checkedId(agentId);
+  if (typeof token !== 'string' || token.length > 256) throw new Error('Unauthorized agent');
+  const agent = state.automatic?.agents[agentId];
+  const digest = crypto.createHash('sha256').update(token).digest('hex');
+  if (!agent || !crypto.timingSafeEqual(Buffer.from(digest), Buffer.from(agent.tokenHash))) throw new Error('Unauthorized agent');
+}
+
+export async function claimAutomaticDirectMessage(recipientId: string, token: string, messageId: string, prompt: string): Promise<{ launch: boolean; message: AutomaticDirectMessage }> {
+  checkedId(messageId);
+  if (typeof prompt !== 'string' || !prompt.trim() || prompt.length > 2048) throw new Error('Bounded direct prompt required');
+  return withCoordinatorLock(async state => {
+    authenticateAutomatic(state, recipientId, token);
+    const automatic = automaticState(state);
+    const messages = automatic.direct ??= {};
+    const now = Date.now();
+    for (const message of Object.values(messages)) if (['CLAIMED', 'STARTED'].includes(message.status) && message.leaseUntil <= now) {
+      message.status = 'BLOCKED'; message.blocker = 'TIMEOUT';
+    }
+    if (messages[messageId]) {
+      if (messages[messageId].recipientId !== recipientId || messages[messageId].prompt !== prompt) throw new Error('Message ID identity/content conflict');
+      return { result: { launch: false, message: messages[messageId] }, events: [] };
+    }
+    if (Object.keys(messages).length >= 64) throw new Error('Direct mailbox capacity reached');
+    const agent = automatic.agents[recipientId];
+    const busy = Object.values(messages).some(message => message.recipientId === recipientId && ['CLAIMED', 'STARTED'].includes(message.status));
+    const allowed = agent.canManage && automatic.managerId === recipientId && automatic.managerUntil > now;
+    const message: AutomaticDirectMessage = { messageId, recipientId, prompt, status: allowed && !busy ? 'CLAIMED' : 'BLOCKED', runId: crypto.randomUUID(), leaseUntil: now + 180_000, createdAt: now, output: allowed && !busy ? '' : 'Manager-only read-only adapter unavailable or recipient already executing' };
+    if (!allowed || busy) message.blocker = 'NO_ADAPTER';
+    messages[messageId] = message;
+    return { result: { launch: allowed && !busy, message }, events: [] };
+  });
+}
+
+export async function updateAutomaticDirectMessage(recipientId: string, token: string, messageId: string, runId: string, update: { status: AutomaticDirectMessage['status']; output?: string; blocker?: AutomaticDirectMessage['blocker']; preflight?: AutomaticDirectMessage['preflight'] }): Promise<AutomaticDirectMessage> {
+  return withCoordinatorLock(async state => {
+    authenticateAutomatic(state, recipientId, token);
+    const message = state.automatic?.direct?.[messageId];
+    if (!message || message.recipientId !== recipientId || message.runId !== runId || !['CLAIMED', 'STARTED'].includes(message.status) || message.leaseUntil <= Date.now()) throw new Error('Current direct execution lease required');
+    if (!['STARTED', 'COMPLETED', 'BLOCKED'].includes(update.status)) throw new Error('Invalid direct transition');
+    message.status = update.status;
+    message.progressAt = Date.now();
+    if (update.status === 'STARTED') message.startedAt ??= Date.now();
+    if (update.output) message.output = update.output.slice(0, 8192);
+    message.blocker = update.blocker;
+    if (update.preflight) message.preflight = update.preflight;
+    return { result: message, events: [] };
+  });
+}
+
+export async function getAutomaticDirectMessages(recipientId: string, token: string): Promise<AutomaticDirectMessage[]> {
+  return readOnly(state => { authenticateAutomatic(state, recipientId, token); return Object.values(state.automatic?.direct ?? {}).filter(message => message.recipientId === recipientId); });
+}
+
+/** Local CLI provisioning is a trusted user action, never a WebSocket operation. */
+export async function authorizeAutomaticAgent(id: string, token: string, capabilities: string[], roles: AutomaticRole[], canManage: boolean): Promise<void> {
+  checkedId(id);
+  checkedCapabilities(capabilities);
+  if (typeof token !== 'string' || token.length < 32 || token.length > 256) throw new Error('Agent token must contain 32..256 characters');
+  if (!Array.isArray(roles) || roles.length < 1 || roles.length > 4 || roles.some(role => !AUTOMATIC_ROLES.includes(role))) throw new Error('Invalid roles');
+  await withCoordinatorLock(async state => {
+    const automatic = automaticState(state);
+    if (!automatic.agents[id] && Object.keys(automatic.agents).length >= 32) throw new Error('Agent registry capacity reached');
+    if (automatic.agents[id]) throw new Error('Agent already authorized; identity cannot be overwritten');
+    automatic.agents[id] = { id, tokenHash: crypto.createHash('sha256').update(token).digest('hex'), capabilities: [...new Set(capabilities)], roles: [...new Set(roles)], canManage, leaseUntil: 0, credits: 'AVAILABLE', model: '' };
+    return { result: undefined, events: [] };
+  });
+}
+
+function automaticTick(state: CoordinatorState, now: number): void {
+  const automatic = automaticState(state);
+  const eligible = Object.values(automatic.agents).filter(agent => agent.leaseUntil > now && agent.credits === 'AVAILABLE');
+  const current = automatic.managerId ? automatic.agents[automatic.managerId] : undefined;
+  if (!current || automatic.managerUntil <= now || current.leaseUntil <= now || current.credits !== 'AVAILABLE' || !current.canManage) {
+    const candidate = eligible.filter(agent => agent.canManage).sort((left, right) => left.id.localeCompare(right.id))[0];
+    if (automatic.managerId !== (candidate?.id ?? null) || automatic.managerUntil <= now) automatic.epoch += 1;
+    automatic.managerId = candidate?.id ?? null;
+    automatic.managerUntil = candidate ? now + AUTOMATIC_LEASE_MS : 0;
+  }
+  for (const work of Object.values(automatic.work)) {
+    if (work.ownerId && ['OFFERED', 'ACKNOWLEDGED', 'RUNNING'].includes(work.phase) && work.leaseUntil <= now) {
+      if (work.phase === 'OFFERED') {
+        for (const [resource, lock] of Object.entries(state.locks)) if (lock.taskId === work.taskId) delete state.locks[resource];
+        state.tasks[work.taskId].ownerChatId = null;
+        state.tasks[work.taskId].phase = 'TODO';
+        work.ownerId = null;
+        work.phase = 'QUEUED';
+      } else {
+        work.phase = 'BLOCKED';
+        work.notes = 'Lease expired; preserve dirty files and locks pending explicit manager handoff';
+        state.tasks[work.taskId].phase = 'BLOCKED';
+      }
+    }
+  }
+  if (!automatic.managerId) return;
+  for (const work of Object.values(automatic.work).sort((left, right) => left.taskId.localeCompare(right.taskId))) {
+    if (work.phase !== 'QUEUED') continue;
+    const task = state.tasks[work.taskId];
+    if (task.ownerChatId || task.dependencies.some(id => state.tasks[id]?.phase !== 'CLOSED')) continue;
+    if (task.scope.files.some(file => state.locks[file] || (state.fileLocks?.[file] && state.fileLocks[file].expiresAt > now))) continue;
+    const agent = eligible.filter(candidate => candidate.id !== automatic.managerId && candidate.id !== work.authorId && candidate.roles.includes(work.role) && work.capabilities.every(capability => candidate.capabilities.includes(capability)) && !Object.values(automatic.work).some(existing => existing.ownerId === candidate.id && !['ACCEPTED'].includes(existing.phase))).sort((left, right) => left.id.localeCompare(right.id))[0];
+    if (!agent) continue;
+    work.ownerId = agent.id;
+    work.phase = 'OFFERED';
+    work.assignmentId = crypto.randomUUID();
+    work.leaseUntil = now + AUTOMATIC_LEASE_MS;
+    task.ownerChatId = agent.id;
+    task.phase = 'CLAIMED';
+    task.intent = work.role === 'WRITER' ? 'IMPLEMENT' : 'AUDIT';
+    for (const file of task.scope.files) state.locks[file] = { resource: file, taskId: task.taskId, chatId: agent.id, mode: work.role === 'WRITER' ? 'WRITE' : 'READ_ONLY', acquiredAt: nowIso() };
+  }
+}
+
+/** Shared atomic state protects both hubs and CLI processes from split-brain. No shell/model execution. */
+export async function automaticRequest(request: AutomaticRequest): Promise<AutomaticSnapshot> {
+  checkedId(request.agentId);
+  if (typeof request.token !== 'string' || request.token.length > 256) throw new Error('Unauthorized agent');
+  if (request.notes && (typeof request.notes !== 'string' || request.notes.length > 4096)) throw new Error('Notes exceed bound');
+  if (request.evidence && (!Array.isArray(request.evidence) || request.evidence.length > 16 || request.evidence.some(item => typeof item !== 'string' || item.length > 2048))) throw new Error('Evidence exceeds bound');
+  return withCoordinatorLock(async state => {
+    const automatic = automaticState(state);
+    const agent = automatic.agents[request.agentId];
+    const digest = crypto.createHash('sha256').update(request.token).digest('hex');
+    if (!agent || !crypto.timingSafeEqual(Buffer.from(digest), Buffer.from(agent.tokenHash))) throw new Error('Unauthorized agent');
+    const now = Date.now();
+    if (request.action === 'REGISTER' || request.action === 'HEARTBEAT') {
+      agent.leaseUntil = now + AUTOMATIC_LEASE_MS;
+      if (request.credits) {
+        if (!['AVAILABLE', 'EXHAUSTED'].includes(request.credits)) throw new Error('Invalid credits state');
+        agent.credits = request.credits;
+      }
+      if (request.model) {
+        if (typeof request.model !== 'string' || request.model.length > 128) throw new Error('Invalid model label');
+        agent.model = request.model;
+      }
+      if (automatic.managerId === agent.id && automatic.managerUntil > now) automatic.managerUntil = now + AUTOMATIC_LEASE_MS;
+      for (const work of Object.values(automatic.work)) if (work.ownerId === agent.id && work.phase === 'RUNNING' && agent.credits === 'EXHAUSTED') {
+        work.phase = 'BLOCKED'; work.notes = 'Credits exhausted; preserve dirty files and locks'; state.tasks[work.taskId].phase = 'BLOCKED';
+      }
+    }
+    automaticTick(state, now);
+    const managerAction = ['ENQUEUE', 'HANDOFF', 'ACCEPT'].includes(request.action);
+    if (managerAction && (automatic.managerId !== agent.id || request.epoch !== automatic.epoch)) throw new Error('Current manager lease and fencing epoch required');
+    if (request.action === 'ENQUEUE') {
+      if (!request.taskId || !request.capabilities || !request.role || request.role === 'RESERVE') throw new Error('Task role and capabilities required');
+      checkedCapabilities(request.capabilities);
+      if (!AUTOMATIC_ROLES.includes(request.role)) throw new Error('Invalid task role');
+      const task = state.tasks[request.taskId];
+      if (!task || task.ownerChatId || task.phase !== 'TODO' || automatic.work[task.taskId]) throw new Error('Task must be existing unclaimed TODO; duplicate queue rejected');
+      if (Object.keys(automatic.work).length >= 256) throw new Error('Bounded queue capacity reached');
+      if (request.scope) task.scope = request.scope;
+    if (!Array.isArray(task.scope.files) || !Array.isArray(task.scope.directories) || task.scope.directories.length || task.scope.files.length > 32 || task.scope.files.some(file => typeof file !== 'string' || file.length > 256 || path.isAbsolute(file) || file.includes('..') || /[*?\\]/.test(file))) throw new Error('Automatic scope requires bounded exact repo-relative files');
+      const original = request.reviewOf ? automatic.work[request.reviewOf] : undefined;
+      if (request.reviewOf && (!original || original.phase !== 'COMPLETED' || request.role === 'WRITER')) throw new Error('Independent review requires completed original task');
+      automatic.work[task.taskId] = { taskId: task.taskId, capabilities: request.capabilities, role: request.role, reviewOf: request.reviewOf, authorId: original?.ownerId ?? undefined, ownerId: null, phase: 'QUEUED', leaseUntil: 0, assignmentId: '', notes: '', evidence: [] };
+    } else if (!['REGISTER', 'HEARTBEAT'].includes(request.action)) {
+      const work = request.taskId ? automatic.work[request.taskId] : undefined;
+      if (!work) throw new Error('Automatic task not found');
+      const task = state.tasks[work.taskId];
+      if (request.action === 'HANDOFF') {
+        const target = request.targetAgentId ? automatic.agents[request.targetAgentId] : undefined;
+        if (!target || work.phase !== 'BLOCKED' || !request.notes || target.leaseUntil <= now || target.credits !== 'AVAILABLE' || !target.roles.includes(work.role) || work.capabilities.some(capability => !target.capabilities.includes(capability)) || target.id === work.authorId || Object.values(automatic.work).some(existing => existing.ownerId === target.id && existing.phase !== 'ACCEPTED')) throw new Error('Explicit capable idle handoff and preservation notes required');
+        const previousOwner = work.ownerId;
+        work.ownerId = target.id; work.assignmentId = crypto.randomUUID(); work.phase = 'OFFERED'; work.leaseUntil = now + AUTOMATIC_LEASE_MS; work.notes = request.notes;
+        task.ownerChatId = target.id; task.phase = 'CLAIMED';
+        for (const lock of Object.values(state.locks)) if (lock.taskId === task.taskId) lock.chatId = target.id;
+        for (const file of task.scope.files) if (state.fileLocks?.[file]?.agent === previousOwner) state.fileLocks[file].agent = target.id;
+      } else if (request.action === 'ACCEPT') {
+        if (work.phase !== 'COMPLETED' || !work.evidence.length) throw new Error('Completion evidence required');
+        if (work.role === 'WRITER' && !Object.values(automatic.work).some(review => review.reviewOf === work.taskId && review.phase === 'ACCEPTED' && review.ownerId !== work.ownerId)) throw new Error('Accepted independent review required');
+        work.phase = 'ACCEPTED'; task.phase = 'CLOSED'; task.ownerChatId = null;
+      } else {
+        if (work.ownerId !== agent.id || work.assignmentId !== request.assignmentId || work.leaseUntil <= now || agent.leaseUntil <= now || agent.credits !== 'AVAILABLE') throw new Error('Current task owner and live assignment lease required');
+        if (request.action === 'ACK' && ['OFFERED', 'ACKNOWLEDGED'].includes(work.phase)) { work.phase = 'ACKNOWLEDGED'; work.acknowledgedAt ??= now; }
+        else if (request.action === 'START' && work.phase === 'ACKNOWLEDGED') { work.phase = 'RUNNING'; work.startedAt = now; task.phase = 'IMPLEMENTING'; }
+        else if (request.action === 'PROGRESS' && work.phase === 'RUNNING') { work.notes = request.notes ?? work.notes; work.progressAt = now; }
+        else if (request.action === 'BLOCK' && ['RUNNING', 'ACKNOWLEDGED'].includes(work.phase) && request.notes) { work.phase = 'BLOCKED'; task.phase = 'BLOCKED'; work.notes = request.notes; }
+        else if (request.action === 'COMPLETE' && work.phase === 'RUNNING' && request.evidence?.length) {
+          work.phase = 'COMPLETED'; work.evidence = request.evidence; work.notes = request.notes ?? '';
+          task.phase = 'VALIDATING';
+          // Completion stops writing; reviewed scope may now be claimed read-only.
+          for (const [resource, lock] of Object.entries(state.locks)) if (lock.taskId === work.taskId) delete state.locks[resource];
+          for (const file of task.scope.files) if (state.fileLocks?.[file]?.agent === agent.id) delete state.fileLocks[file];
+        } else throw new Error('Invalid lifecycle transition');
+        work.leaseUntil = now + AUTOMATIC_LEASE_MS;
+      }
+    }
+    automaticTick(state, now);
+    return { result: { managerId: automatic.managerId, epoch: automatic.epoch, role: automatic.managerId === agent.id ? 'MANAGER' : agent.roles[0], assignments: Object.values(automatic.work).filter(work => work.ownerId === agent.id), execution: 'TRANSPORT_ONLY_NO_MODEL_ADAPTER' }, events: [] };
+  });
+}
 
 function nowIso(): string {
   return new Date().toISOString();
@@ -124,8 +337,17 @@ async function writeState(state: CoordinatorState): Promise<void> {
   state.version += 1;
   state.updatedAt = nowIso();
   const tmp = `${STATE_FILE}.tmp.${crypto.randomBytes(4).toString('hex')}`;
-  await fsp.writeFile(tmp, JSON.stringify(state, null, 2) + '\n', 'utf8');
-  await fsp.rename(tmp, STATE_FILE);
+  await fsp.writeFile(tmp, JSON.stringify(state) + '\n', 'utf8');
+  try {
+    await fsp.rename(tmp, STATE_FILE);
+  } catch (err: any) {
+    if (err.code === 'EPERM' || err.code === 'EBUSY' || err.code === 'EEXIST') {
+      await fsp.copyFile(tmp, STATE_FILE);
+      await fsp.unlink(tmp).catch(() => {});
+    } else {
+      throw err;
+    }
+  }
 }
 
 export async function appendAuditEvent(
@@ -137,14 +359,14 @@ export async function appendAuditEvent(
 }
 
 async function withCoordinatorLock<T>(
-  operation: (state: CoordinatorState) => Promise<{ result: T; events: CoordAuditEvent[] }>
+  operation: (state: CoordinatorState) => Promise<{ result: T; events: CoordAuditEvent[]; unchanged?: boolean }>
 ): Promise<T> {
   await ensureDirs();
   const token = await acquireLock();
   try {
     const state = await readState();
-    const { result, events } = await operation(state);
-    await writeState(state);
+    const { result, events, unchanged } = await operation(state);
+    if (!unchanged) await writeState(state);
     for (const event of events) {
       event.payload.stateVersion = state.version;
       await fsp.appendFile(EVENTS_FILE, JSON.stringify(event) + '\n', 'utf8');
@@ -287,6 +509,7 @@ export async function listTasks(): Promise<CoordTask[]> {
 export async function claimTask(taskId: string, chatId: string, agent: string, intent: CoordIntent, scope: CoordScope): Promise<{ success: boolean; task?: CoordTask; locks?: CoordResourceLock[]; conflictType?: string; message?: string }> {
   return withCoordinatorLock<{ success: boolean; task?: CoordTask; locks?: CoordResourceLock[]; conflictType?: string; message?: string }>(async (state) => {
     const task = state.tasks[taskId];
+    if (state.automatic?.work[taskId]) return { result: { success: false, message: 'Automatic tasks require authenticated lifecycle' }, events: [] };
     if (!task) return { result: { success: false, conflictType: 'TASK_NOT_FOUND', message: `Task ${taskId} not found` }, events: [] };
     if (task.ownerChatId && task.ownerChatId !== chatId) return { result: { success: false, conflictType: 'DUPLICATE_TASK', message: 'Task already claimed' }, events: [] };
 
@@ -331,12 +554,13 @@ export async function claimTask(taskId: string, chatId: string, agent: string, i
   });
 }
 
-export async function releaseTask(taskId: string, chatId: string): Promise<void> {
+export async function releaseTask(taskId: string, chatId: string, finalPhase?: CoordTaskStatus): Promise<void> {
   await withCoordinatorLock(async (state) => {
+    if (state.automatic?.work[taskId]) throw new Error('Automatic tasks require authenticated lifecycle');
     const task = state.tasks[taskId];
     if (task && task.ownerChatId === chatId) {
       task.ownerChatId = null;
-      task.phase = 'TODO';
+      task.phase = finalPhase || (task.phase === 'CLOSED' ? 'CLOSED' : 'TODO');
       task.updatedAt = nowIso();
     }
     const chat = state.chats[chatId];
@@ -360,6 +584,7 @@ export async function releaseTask(taskId: string, chatId: string): Promise<void>
 
 export async function updateTaskPhase(taskId: string, chatId: string, phase: CoordTaskStatus): Promise<CoordTask> {
   return withCoordinatorLock(async (state) => {
+    if (state.automatic?.work[taskId]) throw new Error('Automatic tasks require authenticated lifecycle');
     const task = state.tasks[taskId];
     if (!task) throw new Error('Task not found');
     if (task.ownerChatId !== chatId) throw new Error('Not owner');
@@ -373,6 +598,7 @@ export async function updateTaskPhase(taskId: string, chatId: string, phase: Coo
 
 export async function recordValidation(taskId: string, chatId: string, evidence: CoordValidationEvidence): Promise<CoordTask> {
   return withCoordinatorLock(async (state) => {
+    if (state.automatic?.work[taskId]) throw new Error('Automatic tasks require authenticated lifecycle');
     const task = state.tasks[taskId];
     if (!task) throw new Error('Task not found');
     if (task.ownerChatId !== chatId) throw new Error('Not owner');
@@ -385,6 +611,7 @@ export async function recordValidation(taskId: string, chatId: string, evidence:
 
 export async function initiateHandoff(taskId: string, fromChatId: string, toChatId: string, data: Partial<CoordHandoff>): Promise<CoordTask> {
   return withCoordinatorLock(async (state) => {
+    if (state.automatic?.work[taskId]) throw new Error('Automatic tasks require authenticated lifecycle');
     const task = state.tasks[taskId];
     if (!task) throw new Error('Task not found');
     task.pendingHandoff = {
@@ -464,5 +691,326 @@ export async function getStatus(): Promise<StatusOutput> {
         dependencyBlocks: 0, undeclaredChanges: 0, staleLocks: chats.filter(c => isChatStale(c)).length,
       }
     };
+  });
+}
+
+// ─── Real-Time Agent Mesh & Priority Preemption ───────────────────────────────
+
+export const COORD_AGENT_PRIORITIES: Record<string, number> = {
+  'Codex': 10,
+  'Antigravity': 10,
+  'Gemini': 10,
+  'Gemini-2': 10
+};
+
+export function getCoordAgentPriority(_agent: string): number {
+  return 10;
+}
+
+export type AcquireCoordFileLockResult = {
+  success: boolean;
+  file: string;
+  priority: number;
+  preempted?: boolean;
+  previousOwner?: string;
+  message?: string;
+  expiresAt: string;
+};
+
+export async function acquireCoordFileLock(
+  file: string,
+  agent: string,
+  reason = 'Modifying file',
+  ttlSeconds = 120,
+  lineStart?: number,
+  lineEnd?: number
+): Promise<AcquireCoordFileLockResult> {
+  return withCoordinatorLock<AcquireCoordFileLockResult>(async (state) => {
+    state.fileLocks = state.fileLocks || {};
+    state.messages = state.messages || [];
+    const normalizedFile = file.replace(/\\/g, '/');
+    const now = Date.now();
+    const priority = getCoordAgentPriority(agent);
+
+    let expiredPurged = false;
+    // Purge expired soft locks
+    for (const [f, l] of Object.entries(state.fileLocks)) {
+      if (l.expiresAt && now > l.expiresAt) {
+        delete state.fileLocks[f];
+        expiredPurged = true;
+      }
+    }
+
+    const existing = state.fileLocks[normalizedFile];
+    if (existing && existing.agent !== agent && now < existing.expiresAt) {
+      const remainingSec = Math.ceil((existing.expiresAt - now) / 1000);
+      return { result: { success: false, file: normalizedFile, priority, message: `File is locked by ${existing.agent} (${remainingSec}s remaining): ${existing.reason}`, expiresAt: new Date(existing.expiresAt).toISOString() }, events: [], unchanged: !expiredPurged };
+    }
+
+    const expiresAt = now + (ttlSeconds * 1000);
+    state.fileLocks[normalizedFile] = {
+      file: normalizedFile,
+      agent,
+      priority,
+      reason,
+      acquiredAt: nowIso(),
+      expiresAt,
+      ttlSeconds,
+      ...(Number.isSafeInteger(lineStart) && lineStart! > 0 ? { lineStart } : {}),
+      ...(Number.isSafeInteger(lineEnd) && lineEnd! > 0 ? { lineEnd } : {})
+    };
+
+    return {
+      result: {
+        success: true,
+        file: normalizedFile,
+        priority,
+        expiresAt: new Date(expiresAt).toISOString()
+      },
+      events: []
+    };
+  });
+}
+
+export type ReleaseCoordFileLockResult = {
+  success: boolean;
+  released: string | null;
+};
+
+export async function releaseCoordFileLock(
+  file: string,
+  agent: string
+): Promise<ReleaseCoordFileLockResult> {
+  return withCoordinatorLock<ReleaseCoordFileLockResult>(async (state) => {
+    state.fileLocks = state.fileLocks || {};
+    const normalizedFile = file.replace(/\\/g, '/');
+    if (state.fileLocks[normalizedFile]?.agent === agent) {
+      delete state.fileLocks[normalizedFile];
+      return { result: { success: true, released: normalizedFile }, events: [] };
+    }
+    return { result: { success: false, released: null }, events: [], unchanged: true };
+  });
+}
+
+export async function expireCoordFileLock(file: string, now = Date.now()): Promise<boolean> {
+  return withCoordinatorLock(async state => {
+    const normalizedFile = file.replace(/\\/g, '/');
+    const lock = state.fileLocks?.[normalizedFile];
+    if (!lock || !lock.expiresAt || lock.expiresAt > now) {
+      return { result: false, events: [], unchanged: true };
+    }
+    delete state.fileLocks![normalizedFile];
+    return { result: true, events: [] };
+  });
+}
+
+export async function releaseAllCoordFileLocks(): Promise<{ count: number }> {
+  return withCoordinatorLock<{ count: number }>(async (state) => {
+    state.fileLocks = state.fileLocks || {};
+    const count = Object.keys(state.fileLocks).length;
+    state.fileLocks = {};
+    return { result: { count }, events: [] };
+  });
+}
+
+export async function sendCoordPeerMessage(
+  from: string,
+  to: string,
+  text: string
+): Promise<{ success: boolean; message: CoordPeerMessage }> {
+  return withCoordinatorLock(async (state) => {
+    state.messages = state.messages || [];
+    const msg: CoordPeerMessage = {
+      id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      from,
+      to: to || 'all',
+      text,
+      timestamp: nowIso()
+    };
+    state.messages.push(msg);
+    if (state.messages.length > 100) {
+      state.messages = state.messages.slice(-100);
+    }
+    return { result: { success: true, message: msg }, events: [] };
+  });
+}
+
+export async function getCoordPeerHistory(limit = 10): Promise<CoordPeerMessage[]> {
+  return readOnly(state => (state.messages || []).slice(-limit));
+}
+
+export async function getCoordFileLocks(): Promise<Record<string, CoordFileLock>> {
+  return readOnly(state => state.fileLocks || {});
+}
+
+export async function getCoordPeerSnapshot(limit = 0): Promise<{ locks: Record<string, CoordFileLock>; messages: CoordPeerMessage[] }> {
+  const boundedLimit = Number.isSafeInteger(limit) ? Math.max(0, Math.min(100, limit)) : 0;
+  return readOnly(state => ({
+    locks: state.fileLocks || {},
+    messages: boundedLimit ? (state.messages || []).slice(-boundedLimit) : []
+  }));
+}
+
+export const DEFAULT_AGENT_ROLES: Record<string, AgentRoleConfig> = {
+  Codex: {
+    agent: 'Codex',
+    role: 'MANAGER',
+    priority: 100,
+    status: 'ONLINE',
+    currentAction: 'Руководит разработкой • Ставит задачи',
+    activeFiles: [],
+    lastSeen: new Date().toISOString(),
+    model: 'OpenAI Codex / o3'
+  },
+  Gemini: {
+    agent: 'Gemini',
+    role: 'WORKER',
+    priority: 20,
+    status: 'ONLINE',
+    currentAction: 'Автономный исполнитель • Пишет код',
+    activeFiles: [],
+    lastSeen: new Date().toISOString(),
+    model: 'Gemini 3.8 Flash'
+  },
+  Sonnet: {
+    agent: 'Sonnet',
+    role: 'CODE_REVIEWER',
+    priority: 80,
+    status: 'ONLINE',
+    currentAction: 'Глубокий аудит кода • Проверка типизации',
+    activeFiles: [],
+    lastSeen: new Date().toISOString(),
+    model: 'Claude Sonnet 4.6'
+  },
+  Antigravity: {
+    agent: 'Antigravity',
+    role: 'PLATFORM',
+    priority: 50,
+    status: 'ONLINE',
+    currentAction: 'Инфраструктура • CRTX Dual-Mesh Hub',
+    activeFiles: [],
+    lastSeen: new Date().toISOString(),
+    model: 'Gemini 3.1 Pro'
+  }
+};
+
+export async function getAgentRoles(): Promise<Record<string, AgentRoleConfig>> {
+  return readOnly(state => {
+    const roles = { ...DEFAULT_AGENT_ROLES, ...(state.agentRoles || {}) };
+    // Synchronize active files from current fileLocks
+    const locks = state.fileLocks || {};
+    for (const key of Object.keys(roles)) {
+      roles[key].activeFiles = Object.values(locks)
+        .filter(l => l.agent.toLowerCase() === key.toLowerCase())
+        .map(l => l.file);
+    }
+    return roles;
+  });
+}
+
+export async function setAgentRole(
+  agent: string,
+  role: 'MANAGER' | 'WORKER' | 'PLATFORM' | 'CODE_REVIEWER' | 'SUPERVISOR' | 'ANALYZER',
+  priority?: number,
+  model?: string
+): Promise<{ success: boolean; config: AgentRoleConfig }> {
+  return withCoordinatorLock<{ success: boolean; config: AgentRoleConfig }>(async (state) => {
+    state.agentRoles = { ...DEFAULT_AGENT_ROLES, ...(state.agentRoles || {}) };
+    const current = state.agentRoles[agent] || {
+      agent,
+      role: 'WORKER',
+      priority: 20,
+      status: 'ONLINE',
+      currentAction: 'В сети',
+      activeFiles: [],
+      lastSeen: nowIso(),
+      model: model || 'Unknown AI'
+    };
+
+    let p = priority;
+    if (p === undefined) {
+      if (role === 'MANAGER') p = 100;
+      else if (role === 'WORKER') p = 20;
+      else p = 50;
+    }
+
+    current.role = role;
+    current.priority = p;
+    if (model) current.model = model;
+    current.lastSeen = nowIso();
+    state.agentRoles[agent] = current;
+
+    return { result: { success: true, config: current }, events: [] };
+  });
+}
+
+export async function swapAgentRoles(): Promise<{ success: boolean; roles: Record<string, AgentRoleConfig> }> {
+  return withCoordinatorLock<{ success: boolean; roles: Record<string, AgentRoleConfig> }>(async (state) => {
+    state.agentRoles = { ...DEFAULT_AGENT_ROLES, ...(state.agentRoles || {}) };
+    const codex = state.agentRoles['Codex'] || { ...DEFAULT_AGENT_ROLES['Codex'] };
+    const gemini = state.agentRoles['Gemini'] || { ...DEFAULT_AGENT_ROLES['Gemini'] };
+
+    // Swap roles and priorities
+    const prevCodexRole = codex.role;
+    const prevCodexPriority = codex.priority;
+
+    codex.role = gemini.role;
+    codex.priority = gemini.priority;
+    codex.currentAction = codex.role === 'MANAGER' ? 'Руководит разработкой • Ставит задачи' : 'Автономный исполнитель • Пишет код';
+    codex.lastSeen = nowIso();
+
+    gemini.role = prevCodexRole;
+    gemini.priority = prevCodexPriority;
+    gemini.currentAction = gemini.role === 'MANAGER' ? 'Руководит разработкой • Ставит задачи' : 'Автономный исполнитель • Пишет код';
+    gemini.lastSeen = nowIso();
+
+    state.agentRoles['Codex'] = codex;
+    state.agentRoles['Gemini'] = gemini;
+
+    return { result: { success: true, roles: state.agentRoles }, events: [] };
+  });
+}
+
+export async function updateAgentAction(
+  agent: string,
+  currentAction: string,
+  status?: 'ONLINE' | 'OFFLINE' | 'BUSY' | 'IDLE',
+  model?: string
+): Promise<{ success: boolean; config: AgentRoleConfig }> {
+  return withCoordinatorLock<{ success: boolean; config: AgentRoleConfig }>(async (state) => {
+    state.agentRoles = { ...DEFAULT_AGENT_ROLES, ...(state.agentRoles || {}) };
+    const current = state.agentRoles[agent] || {
+      agent,
+      role: 'WORKER',
+      priority: 20,
+      status: 'ONLINE',
+      currentAction,
+      activeFiles: [],
+      lastSeen: nowIso(),
+      model: model || 'Unknown AI'
+    };
+
+    current.currentAction = currentAction;
+    if (status) current.status = status;
+    if (model) current.model = model;
+    current.lastSeen = nowIso();
+    state.agentRoles[agent] = current;
+
+    return { result: { success: true, config: current }, events: [] };
+  });
+}
+
+export async function releaseAllCoordFileLocksForAgent(agent: string): Promise<{ count: number }> {
+  return withCoordinatorLock<{ count: number }>(async (state) => {
+    state.fileLocks = state.fileLocks || {};
+    let count = 0;
+    const normalizedAgent = agent.toLowerCase();
+    for (const [file, lock] of Object.entries(state.fileLocks)) {
+      if (lock.agent.toLowerCase() === normalizedAgent) {
+        delete state.fileLocks[file];
+        count++;
+      }
+    }
+    return { result: { count }, events: [] };
   });
 }
