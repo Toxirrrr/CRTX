@@ -133,19 +133,40 @@ Endpoints are grouped by their canonical surface: \`ORGANIZATION\`, \`PLATFORM\`
   for (const surface of surfaces) {
     const surfaceEndpoints = catalog.endpoints.filter(e => e.surface === surface);
     apiMarkdown += `\n## Surface: \`${surface}\` (${surfaceEndpoints.length} endpoints)\n\n`;
-    apiMarkdown += `| Method | Full Route | Body DTO | Roles / Permissions | Summary |\n`;
-    apiMarkdown += `|--------|------------|----------|---------------------|---------|\n`;
 
-    for (const ep of surfaceEndpoints.sort((a, b) => a.fullPath.localeCompare(b.fullPath))) {
-      const rolesStr = ep.roles.length > 0 ? `Roles: \`${ep.roles.join(', ')}\`` : '';
-      const permStr = ep.permissions.length > 0 ? `Perms: \`${ep.permissions.join(', ')}\`` : '';
-      const authStr = [rolesStr, permStr].filter(Boolean).join('; ') || 'Public / OrgScope';
-      const bodyStr = ep.bodyDto ? `\`${ep.bodyDto}\`` : '-';
-      const summaryStr = ep.summary || ep.methodName;
-
-      apiMarkdown += `| \`${ep.method}\` | \`${ep.fullPath}\` | ${bodyStr} | ${authStr} | ${summaryStr} |\n`;
+    // Group endpoints by Domain Module within this surface (NOW: Flat -> AFTERUPDATE: Hierarchical SURFACE[MODULE[ENDPOINTS]])
+    const moduleMap: Record<string, typeof surfaceEndpoints> = {};
+    for (const ep of surfaceEndpoints) {
+      let moduleName = 'General';
+      if (ep.summary && ep.summary.includes(':')) {
+        moduleName = ep.summary.split(':')[0].trim();
+      } else if (ep.controllerName) {
+        moduleName = ep.controllerName.replace(/Controller$/, '');
+      }
+      if (!moduleMap[moduleName]) {
+        moduleMap[moduleName] = [];
+      }
+      moduleMap[moduleName].push(ep);
     }
-    apiMarkdown += `\n`;
+
+    const sortedModules = Object.keys(moduleMap).sort();
+    for (const mod of sortedModules) {
+      const modEndpoints = moduleMap[mod];
+      apiMarkdown += `### Module: \`${mod}\` (${modEndpoints.length} endpoints)\n\n`;
+      apiMarkdown += `| Method | Full Route | Body DTO | Roles / Permissions | Summary |\n`;
+      apiMarkdown += `|--------|------------|----------|---------------------|---------|\n`;
+
+      for (const ep of modEndpoints.sort((a, b) => a.fullPath.localeCompare(b.fullPath))) {
+        const rolesStr = ep.roles.length > 0 ? `Roles: \`${ep.roles.join(', ')}\`` : '';
+        const permStr = ep.permissions.length > 0 ? `Perms: \`${ep.permissions.join(', ')}\`` : '';
+        const authStr = [rolesStr, permStr].filter(Boolean).join('; ') || 'Public / OrgScope';
+        const bodyStr = ep.bodyDto ? `\`${ep.bodyDto}\`` : '-';
+        const summaryStr = ep.summary || ep.methodName;
+
+        apiMarkdown += `| \`${ep.method}\` | \`${ep.fullPath}\` | ${bodyStr} | ${authStr} | ${summaryStr} |\n`;
+      }
+      apiMarkdown += `\n`;
+    }
   }
 
   const apiEndpointsPath = path.join(contractsDir, 'API_ENDPOINTS.md');
