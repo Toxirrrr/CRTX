@@ -1,0 +1,13 @@
+﻿{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "taskId": { "type": "string" },
+    "agentId": { "type": "string" },
+    "leaseId": { "type": "string" },
+    "claimedAt": { "type": "string", "format": "date-time" },
+    "expiresAt": { "type": "string", "format": "date-time" },
+    "heartbeatAt": { "type": "string", "format": "date-time" }
+  },
+  "required": ["taskId", "agentId", "leaseId", "claimedAt", "expiresAt", "heartbeatAt"]
+}

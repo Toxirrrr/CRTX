@@ -1,0 +1,15 @@
+﻿{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "id": { "type": "string" },
+    "rootTaskId": { "type": "string" },
+    "stage": { "type": "string" },
+    "status": { "enum": ["PENDING", "READY", "CLAIMED", "RUNNING", "BLOCKED", "FAILED", "COMPLETED", "CANCELLED", "SKIPPED"] },
+    "required": { "type": "boolean" },
+    "dependencies": { "type": "array", "items": { "type": "string" } },
+    "writeScopes": { "type": "array", "items": { "type": "string" } },
+    "readScopes": { "type": "array", "items": { "type": "string" } }
+  },
+  "required": ["id", "rootTaskId", "stage", "status", "required"]
+}

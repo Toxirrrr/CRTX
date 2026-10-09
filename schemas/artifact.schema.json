@@ -1,0 +1,15 @@
+﻿{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "id": { "type": "string" },
+    "artifactType": { "type": "string" },
+    "taskId": { "type": "string" },
+    "agentId": { "type": "string" },
+    "status": { "enum": ["PASS", "FAIL", "UNKNOWN"] },
+    "command": { "type": "string" },
+    "result": { "type": "string" },
+    "timestamp": { "type": "string", "format": "date-time" }
+  },
+  "required": ["id", "artifactType", "taskId", "agentId", "status", "timestamp"]
+}

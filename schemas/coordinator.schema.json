@@ -1,0 +1,14 @@
+﻿{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "id": { "type": "string" },
+    "taskId": { "type": "string" },
+    "status": { "enum": ["PENDING", "RUNNING", "BLOCKED", "FAILED", "COMPLETED", "CANCELLED"] },
+    "mode": { "enum": ["DIRECT", "TARGETED", "DAG"] },
+    "activeCycleId": { "type": "string" },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" }
+  },
+  "required": ["id", "taskId", "status", "mode"]
+}
