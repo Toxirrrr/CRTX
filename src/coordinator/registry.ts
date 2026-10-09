@@ -9,7 +9,7 @@ import {
   WorkspaceDiff, StatusOutput, ConflictType, CoordinatorState, ClaimTaskConflict, HeartbeatRequest,
   CoordPeerMessage, CoordFileLock, AgentRoleConfig
 } from './types';
-import { AutomaticCoordination, AutomaticRequest, AutomaticSnapshot, AutomaticRole, AutomaticDirectMessage } from './types';
+import { AutomaticCoordination, AutomaticRequest, AutomaticSnapshot, AutomaticRole, AutomaticDirectMessage, Artifact, Cycle, Gate, CrtxEventEnvelope } from './types';
 
 const CRTX_ROOT = path.resolve(__dirname, '..', '..');
 const COORD_DIR = process.env.CRTX_COORDINATOR_TEST_ROOT || path.join(CRTX_ROOT, 'coordinator');
@@ -23,7 +23,11 @@ const AUTOMATIC_LEASE_MS = 60_000;
 const AUTOMATIC_ROLES: AutomaticRole[] = ['WRITER', 'REVIEWER', 'QA', 'RESERVE'];
 
 function automaticState(state: CoordinatorState): AutomaticCoordination {
-  return state.automatic ??= { agents: {}, work: {}, managerId: null, managerUntil: 0, epoch: 0 };
+  const auto = state.automatic ??= { agents: {}, work: {}, managerId: null, managerUntil: 0, epoch: 0 };
+  if (!auto.cycles) auto.cycles = {};
+  if (!auto.gates) auto.gates = {};
+  if (!auto.artifacts) auto.artifacts = {};
+  return auto;
 }
 
 export async function isAutomaticAgent(id: string): Promise<boolean> {
@@ -138,6 +142,14 @@ function automaticTick(state: CoordinatorState, now: number): void {
     const task = state.tasks[work.taskId];
     if (task.ownerChatId || task.dependencies.some(id => state.tasks[id]?.phase !== 'CLOSED')) continue;
     if (task.scope.files.some(file => state.locks[file] || (state.fileLocks?.[file] && state.fileLocks[file].expiresAt > now))) continue;
+
+    // ----- GATE EVALUATION -----
+    const taskGates = Object.values(automatic.gates || {}).filter(g => g.targetId === work.taskId);
+    if (taskGates.length > 0) {
+      const blockedByGate = taskGates.some(g => g.status !== 'PASS');
+      if (blockedByGate) continue;
+    }
+    // ---------------------------
     const agent = eligible.filter(candidate => candidate.id !== automatic.managerId && candidate.id !== work.authorId && candidate.roles.includes(work.role) && work.capabilities.every(capability => candidate.capabilities.includes(capability)) && !Object.values(automatic.work).some(existing => existing.ownerId === candidate.id && !['ACCEPTED'].includes(existing.phase))).sort((left, right) => left.id.localeCompare(right.id))[0];
     if (!agent) continue;
     work.ownerId = agent.id;
@@ -179,8 +191,93 @@ export async function automaticRequest(request: AutomaticRequest): Promise<Autom
       }
     }
     automaticTick(state, now);
-    const managerAction = ['ENQUEUE', 'HANDOFF', 'ACCEPT'].includes(request.action);
+    const managerAction = ['ENQUEUE', 'HANDOFF', 'ACCEPT', 'CREATE_CYCLE', 'CREATE_GATE'].includes(request.action);
     if (managerAction && (automatic.managerId !== agent.id || request.epoch !== automatic.epoch)) throw new Error('Current manager lease and fencing epoch required');
+
+    // --- NEW ACTION HANDLERS ---
+    const snapshotResult: AutomaticSnapshot = { managerId: automatic.managerId, epoch: automatic.epoch, role: (agent.roles as string[]).includes('MANAGER') ? 'MANAGER' : agent.roles[0], assignments: Object.values(automatic.work).filter(w => w.ownerId === agent.id), execution: 'TRANSPORT_ONLY_NO_MODEL_ADAPTER' };
+
+    if (request.action === 'SUBMIT_ARTIFACT') {
+      const artifact = request.artifact;
+      if (!artifact || !artifact.id || !request.taskId) throw new Error('Artifact id and taskId required');
+      const work = automatic.work[request.taskId];
+      if (!work) throw new Error('Automatic task not found');
+      
+      // Idempotency: Return early if already exists
+      if (automatic.artifacts && automatic.artifacts[artifact.id]) {
+        return { result: snapshotResult, events: [] };
+      }
+      
+      // Enforce Artifact <-> Task consistency
+      const newArtifact: Artifact = {
+        id: artifact.id,
+        taskId: work.taskId,
+        agentId: agent.id,
+        type: artifact.type || 'UNKNOWN',
+        status: (artifact.status as any) || 'UNKNOWN',
+        content: artifact.content || '',
+        timestamp: now,
+        executionId: artifact.executionId,
+        sessionId: artifact.sessionId
+      };
+      
+      if (!automatic.artifacts) automatic.artifacts = {};
+      automatic.artifacts[newArtifact.id] = newArtifact;
+      
+      if (!work.artifactIds) work.artifactIds = [];
+      if (!work.artifactIds.includes(newArtifact.id)) work.artifactIds.push(newArtifact.id);
+      
+      return { result: snapshotResult, events: [] };
+    }
+
+    if (request.action === 'EVALUATE_GATE') {
+      const isManager = (automatic.managerId === agent.id);
+      const isEvaluator = (agent.roles as string[]).includes('MANAGER') || (agent.roles as string[]).includes('CODE_REVIEWER') || (agent.roles as string[]).includes('SUPERVISOR') || (agent.roles as string[]).includes('ANALYZER');
+      if (!isManager && !isEvaluator) throw new Error('Unauthorized: Only an Evaluator or Manager can evaluate gates');
+      
+      const gateUpdate = request.gate;
+      if (!gateUpdate || !gateUpdate.id) throw new Error('Gate ID required');
+      if (!automatic.gates) automatic.gates = {};
+      const gate = automatic.gates[gateUpdate.id];
+      if (!gate) throw new Error('Gate not found');
+      if (!['PASS', 'FAIL', 'BLOCKED', 'PENDING'].includes(gateUpdate.status || '')) throw new Error('Invalid gate status');
+      
+      gate.status = gateUpdate.status as any;
+      gate.evaluatedBy = agent.id;
+      gate.evaluatedAt = now;
+      gate.evaluationArtifactIds = gateUpdate.evaluationArtifactIds || [];
+      gate.reason = gateUpdate.reason || '';
+      
+      return { result: snapshotResult, events: [] };
+    }
+
+    if (request.action === 'CREATE_CYCLE') {
+      const cycle = request.cycle;
+      if (!cycle || !cycle.id) throw new Error('Cycle ID required');
+      if (!automatic.cycles) automatic.cycles = {};
+      automatic.cycles[cycle.id] = {
+        id: cycle.id,
+        status: (cycle.status as any) || 'PENDING',
+        tasks: Array.isArray(cycle.tasks) ? cycle.tasks : []
+      };
+      return { result: snapshotResult, events: [] };
+    }
+
+    if (request.action === 'CREATE_GATE') {
+      const gate = request.gate;
+      if (!gate || !gate.id || !gate.targetId) throw new Error('Gate ID and targetId required');
+      if (!automatic.gates) automatic.gates = {};
+      automatic.gates[gate.id] = {
+        id: gate.id,
+        targetId: gate.targetId,
+        type: (gate.type as any) || 'EVIDENCE',
+        status: (gate.status as any) || 'PENDING',
+        requiredArtifactTypes: Array.isArray(gate.requiredArtifactTypes) ? gate.requiredArtifactTypes : [],
+        policyId: gate.policyId
+      };
+      return { result: snapshotResult, events: [] };
+    }
+    // ---------------------------
     if (request.action === 'ENQUEUE') {
       if (!request.taskId || !request.capabilities || !request.role || request.role === 'RESERVE') throw new Error('Task role and capabilities required');
       checkedCapabilities(request.capabilities);

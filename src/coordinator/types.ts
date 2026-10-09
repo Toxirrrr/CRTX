@@ -307,8 +307,52 @@ export interface CoordinatorState {
 
 export type AutomaticRole = 'WRITER' | 'REVIEWER' | 'QA' | 'RESERVE';
 export interface AutomaticAgent { id: string; tokenHash: string; capabilities: string[]; roles: AutomaticRole[]; canManage: boolean; leaseUntil: number; credits: 'AVAILABLE' | 'EXHAUSTED'; model: string; }
-export interface AutomaticWork { acknowledgedAt?: number; startedAt?: number; progressAt?: number; taskId: string; capabilities: string[]; role: AutomaticRole; reviewOf?: string; authorId?: string; ownerId: string | null; phase: 'QUEUED' | 'OFFERED' | 'ACKNOWLEDGED' | 'RUNNING' | 'BLOCKED' | 'COMPLETED' | 'ACCEPTED'; leaseUntil: number; assignmentId: string; notes: string; evidence: string[]; }
-export interface AutomaticCoordination { direct?: { [messageId: string]: AutomaticDirectMessage }; agents: { [id: string]: AutomaticAgent }; work: { [taskId: string]: AutomaticWork }; managerId: string | null; managerUntil: number; epoch: number; }
+export interface AutomaticWork { acknowledgedAt?: number; startedAt?: number; progressAt?: number; taskId: string; capabilities: string[]; role: AutomaticRole; reviewOf?: string; authorId?: string; ownerId: string | null; phase: 'QUEUED' | 'OFFERED' | 'ACKNOWLEDGED' | 'RUNNING' | 'BLOCKED' | 'COMPLETED' | 'ACCEPTED'; leaseUntil: number; assignmentId: string; notes: string; evidence: string[]; artifactIds?: string[]; }
+
+export interface Artifact {
+  id: string;
+  taskId: string;
+  agentId: string;
+  type: string;
+  status: 'PASS' | 'FAIL' | 'UNKNOWN';
+  content: string;
+  timestamp: number;
+  executionId?: string;
+  sessionId?: string;
+}
+
+export interface Cycle {
+  id: string;
+  status: 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED';
+  tasks: string[];
+}
+
+export interface Gate {
+  id: string;
+  targetId: string;
+  type: 'EVIDENCE' | 'STAGE' | 'FINAL';
+  status: 'PENDING' | 'PASS' | 'FAIL' | 'BLOCKED';
+  requiredArtifactTypes: string[];
+  policyId?: string;
+  evaluatedBy?: string;
+  evaluatedAt?: number;
+  evaluationArtifactIds?: string[];
+  reason?: string;
+}
+
+export interface CrtxEventEnvelope<T = unknown> {
+  eventId: string;
+  type: string;
+  version: number;
+  source: { agentId?: string; sessionId?: string };
+  target: { type: string; id: string };
+  timestamp: string;
+  correlationId?: string;
+  causationId?: string;
+  payload: T;
+}
+
+export interface AutomaticCoordination { direct?: { [messageId: string]: AutomaticDirectMessage }; agents: { [id: string]: AutomaticAgent }; work: { [taskId: string]: AutomaticWork }; cycles?: { [cycleId: string]: Cycle }; gates?: { [gateId: string]: Gate }; artifacts?: { [artifactId: string]: Artifact }; managerId: string | null; managerUntil: number; epoch: number; }
 export interface AutomaticDirectMessage { preflight?: { skillPath: string; sha256: string; status: 'PASSED' }; messageId: string; recipientId: string; prompt: string; status: 'QUEUED' | 'CLAIMED' | 'STARTED' | 'COMPLETED' | 'BLOCKED'; runId: string; leaseUntil: number; createdAt: number; startedAt?: number; progressAt?: number; output: string; blocker?: 'AUTH' | 'CREDITS' | 'NETWORK' | 'MODEL_CRASH' | 'TIMEOUT' | 'NO_ADAPTER' | 'SHUTDOWN'; }
-export interface AutomaticRequest { scope?: CoordScope; action: 'REGISTER' | 'HEARTBEAT' | 'ENQUEUE' | 'ACK' | 'START' | 'PROGRESS' | 'BLOCK' | 'COMPLETE' | 'ACCEPT' | 'HANDOFF'; agentId: string; token: string; epoch?: number; taskId?: string; assignmentId?: string; capabilities?: string[]; role?: AutomaticRole; reviewOf?: string; targetAgentId?: string; notes?: string; evidence?: string[]; credits?: 'AVAILABLE' | 'EXHAUSTED'; model?: string; }
+export interface AutomaticRequest { scope?: CoordScope; action: 'REGISTER' | 'HEARTBEAT' | 'ENQUEUE' | 'ACK' | 'START' | 'PROGRESS' | 'BLOCK' | 'COMPLETE' | 'ACCEPT' | 'HANDOFF' | 'SUBMIT_ARTIFACT' | 'EVALUATE_GATE' | 'CREATE_CYCLE' | 'CREATE_GATE'; agentId: string; token: string; epoch?: number; taskId?: string; assignmentId?: string; capabilities?: string[]; role?: AutomaticRole; reviewOf?: string; targetAgentId?: string; notes?: string; evidence?: string[]; credits?: 'AVAILABLE' | 'EXHAUSTED'; model?: string; artifact?: Partial<Artifact>; gate?: Partial<Gate>; cycle?: Partial<Cycle>; }
 export interface AutomaticSnapshot { managerId: string | null; epoch: number; role: AutomaticRole | 'MANAGER'; assignments: AutomaticWork[]; execution: 'TRANSPORT_ONLY_NO_MODEL_ADAPTER'; }
